@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, Clock, Paperclip } from 'lucide-react';
+import { X, Calendar, Clock, Paperclip, Settings } from 'lucide-react';
 import { Transaction, TransactionType, Contact } from '../types';
 import { Button } from './ui/Button';
 import { SearchableDropdown } from './ui/SearchableDropdown';
 import { AddContactModal } from './AddContactModal';
+import { AddItemModal } from './AddItemModal';
 import { MOCK_CONTACTS } from '../services/mockData';
 
 interface EntryDrawerProps {
@@ -28,11 +29,15 @@ export const EntryDrawer: React.FC<EntryDrawerProps> = ({ isOpen, onClose, type,
   const [paymentMode, setPaymentMode] = useState<string | null>('Cash');
   const [contactName, setContactName] = useState<string | null>(null);
 
-  // Lists
+  // Dynamic Lists
   const [contacts, setContacts] = useState<Contact[]>(MOCK_CONTACTS);
+  const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES);
+  const [paymentModes, setPaymentModes] = useState<string[]>(DEFAULT_PAYMENT_MODES);
   
-  // Modal State
+  // Modal States
   const [isAddContactModalOpen, setIsAddContactModalOpen] = useState(false);
+  const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
+  const [isAddPaymentModeModalOpen, setIsAddPaymentModeModalOpen] = useState(false);
 
   // Reset or populate form when drawer opens or initialData changes
   useEffect(() => {
@@ -84,9 +89,20 @@ export const EntryDrawer: React.FC<EntryDrawerProps> = ({ isOpen, onClose, type,
       });
   };
 
+  // Handlers for adding new items
   const handleSaveNewContact = (newContact: Contact) => {
       setContacts([newContact, ...contacts]);
       setContactName(`${newContact.name} (${newContact.type})`);
+  };
+
+  const handleSaveNewCategory = (newCategory: string) => {
+      setCategories(prev => [...prev, newCategory]);
+      setCategory(newCategory);
+  };
+
+  const handleSaveNewPaymentMode = (newMode: string) => {
+      setPaymentModes(prev => [...prev, newMode]);
+      setPaymentMode(newMode);
   };
 
   // Convert lists to options for Dropdown
@@ -96,8 +112,8 @@ export const EntryDrawer: React.FC<EntryDrawerProps> = ({ isOpen, onClose, type,
       subLabel: c.type
   }));
 
-  const categoryOptions = DEFAULT_CATEGORIES.map(c => ({ id: c, label: c }));
-  const paymentModeOptions = DEFAULT_PAYMENT_MODES.map(m => ({ id: m, label: m }));
+  const categoryOptions = categories.map(c => ({ id: c, label: c }));
+  const paymentModeOptions = paymentModes.map(m => ({ id: m, label: m }));
 
   return (
     <>
@@ -209,6 +225,8 @@ export const EntryDrawer: React.FC<EntryDrawerProps> = ({ isOpen, onClose, type,
                     options={categoryOptions}
                     onChange={setCategory}
                     placeholder="Select"
+                    onAddNew={() => setIsAddCategoryModalOpen(true)}
+                    addNewLabel="Add New Category"
                  />
               </div>
               <div className="flex-1">
@@ -218,6 +236,8 @@ export const EntryDrawer: React.FC<EntryDrawerProps> = ({ isOpen, onClose, type,
                     options={paymentModeOptions}
                     onChange={setPaymentMode}
                     placeholder="Select"
+                    onAddNew={() => setIsAddPaymentModeModalOpen(true)}
+                    addNewLabel="Add New Payment Mode"
                  />
               </div>
             </div>
@@ -231,16 +251,6 @@ export const EntryDrawer: React.FC<EntryDrawerProps> = ({ isOpen, onClose, type,
               <p className="text-xs text-gray-500 mt-1 text-center">Attach up to 4 images or PDF files</p>
             </div>
             
-            {/* Month/Year Mock (Based on Screenshot 2 bottom field) */}
-             <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center justify-between">
-                   Month/Year <Settings className="w-3 h-3 text-blue-600 cursor-pointer" />
-                </label>
-                <div className="block w-full border border-gray-300 rounded-md py-2 px-3 text-sm bg-gray-50 text-gray-500">
-                    Month/Year
-                </div>
-            </div>
-
           </div>
 
           {/* Footer */}
@@ -257,12 +267,32 @@ export const EntryDrawer: React.FC<EntryDrawerProps> = ({ isOpen, onClose, type,
       </div>
     </div>
 
+    {/* Contact Modal */}
     <AddContactModal 
         isOpen={isAddContactModalOpen}
         onClose={() => setIsAddContactModalOpen(false)}
         onSave={handleSaveNewContact}
     />
+
+    {/* Category Modal */}
+    <AddItemModal
+        isOpen={isAddCategoryModalOpen}
+        onClose={() => setIsAddCategoryModalOpen(false)}
+        onSave={handleSaveNewCategory}
+        title="Add New Category"
+        inputLabel="Category Name"
+        placeholder="e.g. Salary, EMI, Food, Travel"
+    />
+
+    {/* Payment Mode Modal */}
+    <AddItemModal
+        isOpen={isAddPaymentModeModalOpen}
+        onClose={() => setIsAddPaymentModeModalOpen(false)}
+        onSave={handleSaveNewPaymentMode}
+        title="Add New Payment Mode"
+        inputLabel="Payment Mode Name"
+        placeholder="e.g. Net Banking, Credit Card"
+    />
     </>
   );
 };
-import { Settings } from 'lucide-react';
