@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { 
   ArrowLeft, Settings, UserPlus, CloudUpload, Download, Search, Plus, Minus, 
-  ChevronLeft, ChevronRight, Check, FileText, ChevronDown, Pencil, Trash2
+  ChevronLeft, ChevronRight, Check, FileText, Pencil, Trash2
 } from 'lucide-react';
 import { Book, Transaction, TransactionType } from '../types';
 import { Button } from './ui/Button';
@@ -10,6 +10,7 @@ import { FilterDropdown } from './ui/FilterDropdown';
 import { MOCK_TRANSACTIONS } from '../services/mockData';
 import { EntryDrawer } from './EntryDrawer';
 import { EntryDetailsDrawer } from './EntryDetailsDrawer';
+import { DeleteEntryModal } from './DeleteEntryModal';
 
 interface BookDetailsProps {
   book: Book;
@@ -46,10 +47,15 @@ const DEFAULT_FILTERS: FilterState = {
 export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
   const [transactions, setTransactions] = useState<Transaction[]>(MOCK_TRANSACTIONS);
   
-  // Drawer States
+  // Drawer & Modal States
   const [isEntryDrawerOpen, setIsEntryDrawerOpen] = useState(false);
   const [entryType, setEntryType] = useState<TransactionType>(TransactionType.CASH_IN);
-  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  
+  // States for Editing/Details/Deleting
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null); // For details view
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null); // For edit form
+  const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null); // For delete modal
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   
   // Filter States
   const [openFilter, setOpenFilter] = useState<string | null>(null);
@@ -176,40 +182,75 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
 
   const handleOpenEntryDrawer = (type: TransactionType) => {
     setEntryType(type);
+    setEditingTransaction(null); // Ensure we are in add mode
     setIsEntryDrawerOpen(true);
   };
 
-  const handleSaveTransaction = (newTx: Partial<Transaction>) => {
-    const type = entryType;
-    const amount = Number(newTx.amount) || 0;
-    
-    // In a real app, balanceAfter needs to be recalculated for all subsequent transactions
-    // For mock, we just prepend and use a simple running calc logic or backend logic
-    const tx: Transaction = {
-      id: Math.random().toString(36).substr(2, 9),
-      bookId: book.id,
-      type: type,
-      date: newTx.date || new Date().toISOString(),
-      time: newTx.time || '12:00',
-      amount: amount,
-      details: newTx.details || '',
-      category: newTx.category || 'General',
-      paymentMode: newTx.paymentMode || 'Cash',
-      balanceAfter: (transactions[0]?.balanceAfter || 0) + (type === TransactionType.CASH_IN ? amount : -amount),
-      attachments: [],
-      createdBy: 'You'
-    };
-    setTransactions([tx, ...transactions]);
-    setIsEntryDrawerOpen(false);
+  const handleEditTransaction = (tx: Transaction) => {
+      setSelectedTransaction(null); // Close details drawer if open
+      setEditingTransaction(tx);
+      setEntryType(tx.type); // Set type to match transaction
+      setIsEntryDrawerOpen(true);
   };
 
-  const handleDeleteTransaction = (id: string) => {
-    if (confirm('Are you sure you want to delete this entry?')) {
-        setTransactions(prev => prev.filter(t => t.id !== id));
-        if (selectedTransaction?.id === id) {
+  const handleDeleteRequest = (tx: Transaction) => {
+      setTransactionToDelete(tx);
+      setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (transactionToDelete) {
+        setTransactions(prev => prev.filter(t => t.id !== transactionToDelete.id));
+        if (selectedTransaction?.id === transactionToDelete.id) {
             setSelectedTransaction(null);
         }
+        setIsDeleteModalOpen(false);
+        setTransactionToDelete(null);
     }
+  };
+
+  const handleSaveTransaction = (data: any) => {
+    const amount = Number(data.amount) || 0;
+    
+    if (data.id) {
+        // Edit Mode
+        setTransactions(prev => prev.map(t => {
+            if (t.id === data.id) {
+                // Update specific fields
+                return {
+                    ...t,
+                    amount: amount,
+                    details: data.remarks || '',
+                    category: data.category || 'General',
+                    paymentMode: data.paymentMode || 'Cash',
+                    type: data.type, // Type might have changed
+                    // Recalculating balance is complex in real app, simplified here
+                    balanceAfter: t.balanceAfter 
+                };
+            }
+            return t;
+        }));
+    } else {
+        // Add Mode
+        const tx: Transaction = {
+            id: Math.random().toString(36).substr(2, 9),
+            bookId: book.id,
+            type: data.type,
+            date: new Date().toISOString(),
+            time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }),
+            amount: amount,
+            details: data.remarks || '',
+            category: data.category || 'General',
+            paymentMode: data.paymentMode || 'Cash',
+            balanceAfter: (transactions[0]?.balanceAfter || 0) + (data.type === TransactionType.CASH_IN ? amount : -amount),
+            attachments: [],
+            createdBy: 'You'
+        };
+        setTransactions([tx, ...transactions]);
+    }
+    
+    setIsEntryDrawerOpen(false);
+    setEditingTransaction(null);
   };
 
   const formatCurrency = (val: number) => Math.abs(val).toLocaleString();
@@ -536,6 +577,8 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
                   <th scope="col" className="px-6 py-3 whitespace-nowrap text-center">Mode</th>
                   <th scope="col" className="px-6 py-3 text-right whitespace-nowrap">Amount</th>
                   <th scope="col" className="px-6 py-3 text-right whitespace-nowrap">Balance</th>
+                  {/* Empty column for actions */}
+                  <th scope="col" className="px-3 py-3 w-24"></th>
                 </tr>
               </thead>
               <tbody>
@@ -570,38 +613,40 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
                         <td className={`px-6 py-4 text-right font-bold ${amountColor} whitespace-nowrap`}>
                           {Math.abs(tx.amount).toLocaleString()}
                         </td>
-                        <td className="px-6 py-4 text-right whitespace-nowrap relative">
+                        <td className="px-6 py-4 text-right whitespace-nowrap">
                           <span className="font-semibold text-gray-900 block">{formatCurrency(tx.balanceAfter)}</span>
-                          
-                          <div className="hidden group-hover:flex items-center gap-1 absolute right-2 top-1/2 -translate-y-1/2 bg-gray-50 pl-2 shadow-sm border border-gray-100 rounded py-0.5 z-10 bg-white">
-                              <button 
-                                  onClick={(e) => { 
-                                      e.stopPropagation(); 
-                                      // Edit logic placeholder
-                                  }}
-                                  className="p-1.5 text-blue-600 hover:bg-blue-100 rounded transition-colors"
-                                  title="Edit"
-                              >
-                                  <Pencil className="w-4 h-4" />
-                              </button>
-                              <button 
-                                  onClick={(e) => { 
-                                      e.stopPropagation();
-                                      handleDeleteTransaction(tx.id);
-                                  }}
-                                  className="p-1.5 text-red-600 hover:bg-red-100 rounded transition-colors"
-                                  title="Delete"
-                              >
-                                  <Trash2 className="w-4 h-4" />
-                              </button>
-                          </div>
+                        </td>
+                        {/* Actions Column */}
+                        <td className="px-3 py-4 text-center whitespace-nowrap">
+                            <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                <button 
+                                    onClick={(e) => { 
+                                        e.stopPropagation(); 
+                                        handleEditTransaction(tx);
+                                    }}
+                                    className="p-1.5 text-blue-600 hover:bg-blue-100 rounded transition-colors"
+                                    title="Edit"
+                                >
+                                    <Pencil className="w-4 h-4" />
+                                </button>
+                                <button 
+                                    onClick={(e) => { 
+                                        e.stopPropagation();
+                                        handleDeleteRequest(tx);
+                                    }}
+                                    className="p-1.5 text-red-600 hover:bg-red-100 rounded transition-colors"
+                                    title="Delete"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            </div>
                         </td>
                       </tr>
                     );
                   })
                 ) : (
                   <tr>
-                    <td colSpan={7} className="text-center py-10 text-gray-500">
+                    <td colSpan={8} className="text-center py-10 text-gray-500">
                        No transactions found matching your filters.
                     </td>
                   </tr>
@@ -631,19 +676,32 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
         </div>
       </div>
       
-      {/* Create Transaction Drawer */}
+      {/* Create/Edit Transaction Drawer */}
       <EntryDrawer 
         isOpen={isEntryDrawerOpen} 
         onClose={() => setIsEntryDrawerOpen(false)}
         type={entryType}
         onSave={handleSaveTransaction}
+        initialData={editingTransaction}
       />
 
       {/* View Transaction Details Drawer */}
       <EntryDetailsDrawer
         transaction={selectedTransaction}
         onClose={() => setSelectedTransaction(null)}
-        onDelete={handleDeleteTransaction}
+        onDelete={() => selectedTransaction && handleDeleteRequest(selectedTransaction)}
+        onEdit={() => selectedTransaction && handleEditTransaction(selectedTransaction)}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <DeleteEntryModal 
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+            setIsDeleteModalOpen(false);
+            setTransactionToDelete(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        transaction={transactionToDelete}
       />
     </div>
   );

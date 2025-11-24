@@ -21,6 +21,13 @@ export interface Book {
   businessId: string;
 }
 
+export interface Contact {
+  id: string;
+  name: string;
+  type: 'Customer' | 'Supplier';
+  mobile?: string;
+}
+
 export enum TransactionType {
   CASH_IN = 'CASH_IN',
   CASH_OUT = 'CASH_OUT'

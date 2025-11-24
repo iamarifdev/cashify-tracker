@@ -1,5 +1,5 @@
 
-import { Book, Business, Transaction, TransactionType } from '../types';
+import { Book, Business, Transaction, TransactionType, Contact } from '../types';
 
 export const MOCK_USER = {
   id: 'u1',
@@ -23,6 +23,14 @@ export const MOCK_BOOKS: Book[] = [
   // Books for second business
   { id: 'book6', name: "Office Expenses", membersCount: 5, lastUpdated: new Date().toISOString(), netBalance: -25000, businessId: 'b2' },
   { id: 'book7', name: "Client Payments", membersCount: 3, lastUpdated: new Date(Date.now() - 400000000).toISOString(), netBalance: 150000, businessId: 'b2' },
+];
+
+export const MOCK_CONTACTS: Contact[] = [
+  { id: 'c1', name: 'মাহবুবুল আলম ফরিদ (সাবেক ক্যাশিয়ার)', type: 'Supplier', mobile: '01700000000' },
+  { id: 'c2', name: 'আরিফুল ইসলাম (সভাপতি)', type: 'Customer', mobile: '01800000000' },
+  { id: 'c3', name: 'মাসুদ', type: 'Customer' },
+  { id: 'c4', name: 'সাইফুল ইসলাম', type: 'Customer' },
+  { id: 'c5', name: 'মোতালেব ভাউটপাড়া', type: 'Supplier' },
 ];
 
 const generateTransactions = (bookId: string, count: number): Transaction[] => {

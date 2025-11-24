@@ -1,33 +1,106 @@
+
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, Clock, Paperclip, Check, ChevronDown } from 'lucide-react';
-import { TransactionType } from '../types';
+import { X, Calendar, Clock, Paperclip } from 'lucide-react';
+import { Transaction, TransactionType, Contact } from '../types';
 import { Button } from './ui/Button';
+import { SearchableDropdown } from './ui/SearchableDropdown';
+import { AddContactModal } from './AddContactModal';
+import { MOCK_CONTACTS } from '../services/mockData';
 
 interface EntryDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   type: TransactionType;
   onSave: (data: any) => void;
+  initialData?: Transaction | null;
 }
 
-export const EntryDrawer: React.FC<EntryDrawerProps> = ({ isOpen, onClose, type, onSave }) => {
+const DEFAULT_CATEGORIES = ['Sales', 'Expense', 'Salary', 'Rent', 'General'];
+const DEFAULT_PAYMENT_MODES = ['Cash', 'Online', 'bKash'];
+
+export const EntryDrawer: React.FC<EntryDrawerProps> = ({ isOpen, onClose, type, onSave, initialData }) => {
   const [activeType, setActiveType] = useState(type);
   const [amount, setAmount] = useState('');
   const [remarks, setRemarks] = useState('');
+  
+  // Custom Select States
+  const [category, setCategory] = useState<string | null>('General');
+  const [paymentMode, setPaymentMode] = useState<string | null>('Cash');
+  const [contactName, setContactName] = useState<string | null>(null);
 
+  // Lists
+  const [contacts, setContacts] = useState<Contact[]>(MOCK_CONTACTS);
+  
+  // Modal State
+  const [isAddContactModalOpen, setIsAddContactModalOpen] = useState(false);
+
+  // Reset or populate form when drawer opens or initialData changes
   useEffect(() => {
-    setActiveType(type);
-  }, [type]);
+    if (isOpen) {
+        if (initialData) {
+            setActiveType(initialData.type);
+            setAmount(initialData.amount.toString());
+            setRemarks(initialData.details);
+            setCategory(initialData.category || null);
+            setPaymentMode(initialData.paymentMode || null);
+            setContactName(initialData.contactName || null);
+        } else {
+            setActiveType(type);
+            setAmount('');
+            setRemarks('');
+            setCategory('General');
+            setPaymentMode('Cash');
+            setContactName(null);
+        }
+    }
+  }, [isOpen, initialData, type]);
 
   if (!isOpen) return null;
 
+  const isEditMode = !!initialData;
   const isCashIn = activeType === TransactionType.CASH_IN;
   const themeColor = isCashIn ? 'green' : 'red';
   const ThemeBtnClass = isCashIn 
     ? 'bg-green-600 text-white hover:bg-green-700' 
     : 'bg-red-600 text-white hover:bg-red-700';
+  
+  const displayDate = initialData 
+    ? new Date(initialData.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+    : new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    
+  const displayTime = initialData ? initialData.time : new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+  const handleSave = () => {
+      onSave({ 
+          id: initialData?.id,
+          amount, 
+          remarks,
+          category: category || 'General',
+          paymentMode: paymentMode || 'Cash',
+          contactName: contactName,
+          type: activeType,
+          date: initialData?.date,
+          time: initialData?.time 
+      });
+  };
+
+  const handleSaveNewContact = (newContact: Contact) => {
+      setContacts([newContact, ...contacts]);
+      setContactName(`${newContact.name} (${newContact.type})`);
+  };
+
+  // Convert lists to options for Dropdown
+  const contactOptions = contacts.map(c => ({
+      id: c.id,
+      label: `${c.name} (${c.type})`, // Showing type in label for simplicity to match screenshot selection
+      subLabel: c.type
+  }));
+
+  const categoryOptions = DEFAULT_CATEGORIES.map(c => ({ id: c, label: c }));
+  const paymentModeOptions = DEFAULT_PAYMENT_MODES.map(m => ({ id: m, label: m }));
 
   return (
+    <>
     <div className="fixed inset-0 z-50 overflow-hidden">
       <div className="absolute inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={onClose} />
       
@@ -37,7 +110,10 @@ export const EntryDrawer: React.FC<EntryDrawerProps> = ({ isOpen, onClose, type,
           {/* Header */}
           <div className="px-6 py-4 flex items-center justify-between border-b border-gray-200">
             <h2 className="text-xl font-semibold text-gray-900">
-              {isCashIn ? 'Add Cash In Entry' : 'Add Cash Out Entry'}
+              {isEditMode 
+                ? (isCashIn ? 'Edit Cash In Entry' : 'Edit Cash Out Entry') 
+                : (isCashIn ? 'Add Cash In Entry' : 'Add Cash Out Entry')
+              }
             </h2>
             <button onClick={onClose} className="text-gray-400 hover:text-gray-500">
               <X className="w-6 h-6" />
@@ -71,7 +147,7 @@ export const EntryDrawer: React.FC<EntryDrawerProps> = ({ isOpen, onClose, type,
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Calendar className="h-4 w-4 text-gray-400" />
                   </div>
-                  <input type="text" readOnly value="13 May, 2023" className="block w-full pl-10 border border-gray-300 rounded-md py-2 text-sm focus:ring-blue-500 focus:border-blue-500" />
+                  <input type="text" readOnly value={displayDate} className="block w-full pl-10 border border-gray-300 rounded-md py-2 text-sm focus:ring-blue-500 focus:border-blue-500 bg-gray-50" />
                 </div>
               </div>
               <div className="w-1/3">
@@ -80,7 +156,7 @@ export const EntryDrawer: React.FC<EntryDrawerProps> = ({ isOpen, onClose, type,
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <Clock className="h-4 w-4 text-gray-400" />
                     </div>
-                    <button className="block w-full pl-10 border border-gray-300 rounded-md py-2 text-sm text-left">07:05 PM</button>
+                    <button className="block w-full pl-10 border border-gray-300 rounded-md py-2 text-sm text-left bg-gray-50">{displayTime}</button>
                  </div>
               </div>
             </div>
@@ -97,13 +173,19 @@ export const EntryDrawer: React.FC<EntryDrawerProps> = ({ isOpen, onClose, type,
               />
             </div>
 
-            {/* Contact Name */}
+            {/* Contact Name (Custom Select) */}
             <div>
-               <label className="block text-xs font-medium text-gray-700 mb-1">Contact Name</label>
-               <div className="relative">
-                 <input type="text" placeholder="Search or Select" className="block w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus:ring-blue-500 focus:border-blue-500" />
-                 <ChevronDown className="absolute right-3 top-2.5 h-4 w-4 text-gray-400" />
-               </div>
+               <SearchableDropdown 
+                  label="Contact Name"
+                  value={contactName}
+                  options={contactOptions}
+                  onChange={setContactName}
+                  placeholder="Search or Select"
+                  variant="contact"
+                  onAddNew={() => setIsAddContactModalOpen(true)}
+                  addNewLabel="Add New Contact"
+                  showImport={true}
+               />
             </div>
 
             {/* Remarks */}
@@ -113,34 +195,30 @@ export const EntryDrawer: React.FC<EntryDrawerProps> = ({ isOpen, onClose, type,
                 rows={3}
                 value={remarks}
                 onChange={(e) => setRemarks(e.target.value)}
-                className="block w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus:ring-blue-500 focus:border-blue-500"
+                className="block w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus:ring-blue-500 focus:border-blue-500 outline-none"
                 placeholder="Enter details..."
               />
             </div>
 
-            {/* Category & Payment Mode */}
+            {/* Category & Payment Mode (Custom Selects) */}
             <div className="flex gap-4">
               <div className="flex-1">
-                <label className="block text-xs font-medium text-gray-700 mb-1">Category</label>
-                <div className="relative">
-                   <select className="block w-full border border-gray-300 rounded-md py-2 px-3 text-sm appearance-none bg-white">
-                     <option>General</option>
-                     <option>Sales</option>
-                     <option>Rent</option>
-                   </select>
-                   <ChevronDown className="absolute right-3 top-2.5 h-4 w-4 text-gray-400 pointer-events-none" />
-                </div>
+                 <SearchableDropdown 
+                    label="Category"
+                    value={category}
+                    options={categoryOptions}
+                    onChange={setCategory}
+                    placeholder="Select"
+                 />
               </div>
               <div className="flex-1">
-                <label className="block text-xs font-medium text-gray-700 mb-1">Payment Mode</label>
-                <div className="relative">
-                   <select className="block w-full border border-gray-300 rounded-md py-2 px-3 text-sm appearance-none bg-white">
-                     <option>Cash</option>
-                     <option>Online</option>
-                     <option>bKash</option>
-                   </select>
-                   <ChevronDown className="absolute right-3 top-2.5 h-4 w-4 text-gray-400 pointer-events-none" />
-                </div>
+                 <SearchableDropdown 
+                    label="Payment Mode"
+                    value={paymentMode}
+                    options={paymentModeOptions}
+                    onChange={setPaymentMode}
+                    placeholder="Select"
+                 />
               </div>
             </div>
 
@@ -152,21 +230,39 @@ export const EntryDrawer: React.FC<EntryDrawerProps> = ({ isOpen, onClose, type,
               </button>
               <p className="text-xs text-gray-500 mt-1 text-center">Attach up to 4 images or PDF files</p>
             </div>
+            
+            {/* Month/Year Mock (Based on Screenshot 2 bottom field) */}
+             <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center justify-between">
+                   Month/Year <Settings className="w-3 h-3 text-blue-600 cursor-pointer" />
+                </label>
+                <div className="block w-full border border-gray-300 rounded-md py-2 px-3 text-sm bg-gray-50 text-gray-500">
+                    Month/Year
+                </div>
+            </div>
 
           </div>
 
           {/* Footer */}
           <div className="border-t border-gray-200 p-6 bg-gray-50">
             <button 
-              onClick={() => onSave({ amount, remarks })}
+              onClick={handleSave}
               className={`w-full py-3 rounded-md font-bold text-white shadow-sm transition-all transform active:scale-95 ${ThemeBtnClass}`}
             >
-              Save
+              {isEditMode ? 'Update' : 'Save'}
             </button>
           </div>
 
         </div>
       </div>
     </div>
+
+    <AddContactModal 
+        isOpen={isAddContactModalOpen}
+        onClose={() => setIsAddContactModalOpen(false)}
+        onSave={handleSaveNewContact}
+    />
+    </>
   );
 };
+import { Settings } from 'lucide-react';
