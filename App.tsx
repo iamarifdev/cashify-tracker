@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Login } from './components/Login';
@@ -13,6 +14,7 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('bookkeeping');
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [businesses, setBusinesses] = useState<Business[]>(MOCK_BUSINESSES);
   const [currentBusiness, setCurrentBusiness] = useState<Business>(MOCK_BUSINESSES[0]);
 
   useEffect(() => {
@@ -48,9 +50,26 @@ const App: React.FC = () => {
 
   const handleBusinessChange = (business: Business) => {
     setCurrentBusiness(business);
-    // If a book was selected, we might want to deselect it if it doesn't belong to the new business
-    // But since the view is likely DASHBOARD when changing business, this is handled.
-    // If we are in BOOK_DETAILS, this would force back to dashboard
+    // If we are in BOOK_DETAILS, this forces back to dashboard
+    if (viewState === 'BOOK_DETAILS') {
+      setViewState('DASHBOARD');
+      setSelectedBook(null);
+    }
+  };
+
+  const handleCreateBusiness = (data: { name: string; category: string; type: string }) => {
+    const newBusiness: Business = {
+        id: `biz_${Date.now()}`,
+        name: data.name,
+        role: 'Owner'
+    };
+    
+    // In a real app, we would make an API call here.
+    // For now, we update local state.
+    const updatedBusinesses = [...businesses, newBusiness];
+    setBusinesses(updatedBusinesses);
+    setCurrentBusiness(newBusiness);
+    
     if (viewState === 'BOOK_DETAILS') {
       setViewState('DASHBOARD');
       setSelectedBook(null);
@@ -79,7 +98,9 @@ const App: React.FC = () => {
           <TopBar 
             user={user}
             currentBusiness={currentBusiness}
+            businesses={businesses}
             onBusinessChange={handleBusinessChange}
+            onCreateBusiness={handleCreateBusiness}
             onLogout={handleLogout}
             onSidebarOpen={() => setIsSidebarOpen(true)}
           />

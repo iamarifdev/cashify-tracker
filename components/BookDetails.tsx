@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   ArrowLeft, Settings, UserPlus, CloudUpload, Download, Search, Plus, Minus, 
   ChevronLeft, ChevronRight, Check, FileText, ChevronDown, Pencil, Trash2
@@ -27,6 +27,22 @@ const PAYMENT_MODES = ['Cash', 'Online', 'bKash'];
 const CATEGORIES = ['Sales', 'Expense', 'Salary', 'Rent', 'General'];
 const MEMBERS = ['You', 'MD SAIFUL ISLAM', 'Md. Shoriful Islam'];
 
+interface FilterState {
+  duration: string;
+  type: string;
+  member: string | null;
+  modes: string[];
+  categories: string[];
+}
+
+const DEFAULT_FILTERS: FilterState = {
+  duration: 'All Time',
+  type: 'All',
+  member: null,
+  modes: [],
+  categories: []
+};
+
 export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
   const [transactions, setTransactions] = useState<Transaction[]>(MOCK_TRANSACTIONS);
   
@@ -38,17 +54,125 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
   // Filter States
   const [openFilter, setOpenFilter] = useState<string | null>(null);
   
-  const [filterDuration, setFilterDuration] = useState('All Time');
-  const [filterType, setFilterType] = useState('All');
-  const [filterMember, setFilterMember] = useState<string | null>(null);
-  const [filterModes, setFilterModes] = useState<string[]>([]);
-  const [filterCategories, setFilterCategories] = useState<string[]>([]);
+  // appliedFilters: The filters actually affecting the list view
+  const [appliedFilters, setAppliedFilters] = useState<FilterState>(DEFAULT_FILTERS);
+  
+  // tempFilters: The state inside the dropdown before clicking "Done"
+  const [tempFilters, setTempFilters] = useState<FilterState>(DEFAULT_FILTERS);
   
   const [searchTerm, setSearchTerm] = useState('');
 
-  const toggleFilter = (name: string) => {
-    setOpenFilter(openFilter === name ? null : name);
+  // Handle opening/closing filters and syncing temp state
+  const handleToggleFilter = (filterName: string) => {
+    if (openFilter === filterName) {
+      setOpenFilter(null);
+    } else {
+      // Sync temp filters with applied filters when opening
+      setTempFilters({ ...appliedFilters });
+      setOpenFilter(filterName);
+    }
   };
+
+  const handleApplyFilter = () => {
+    setAppliedFilters({ ...tempFilters });
+    setOpenFilter(null);
+  };
+
+  const handleClearFilter = (key: keyof FilterState) => {
+    const newFilters = { ...appliedFilters, [key]: DEFAULT_FILTERS[key] };
+    setAppliedFilters(newFilters);
+    // Also update temp filters to avoid stale state if immediately reopened
+    setTempFilters(newFilters);
+    setOpenFilter(null);
+  };
+
+  // Helper to update temp state
+  const updateTempFilter = (key: keyof FilterState, value: any) => {
+    setTempFilters(prev => ({ ...prev, [key]: value }));
+  };
+
+  const toggleMultiSelect = (item: string, currentList: string[], key: keyof FilterState) => {
+    const newList = currentList.includes(item)
+      ? currentList.filter(i => i !== item)
+      : [...currentList, item];
+    updateTempFilter(key, newList);
+  };
+
+  // Derived State: Filtered Transactions based on APPLIED filters
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter(tx => {
+      // 1. Search Term
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        const matches = 
+          tx.details.toLowerCase().includes(term) || 
+          tx.amount.toString().includes(term) ||
+          (tx.category && tx.category.toLowerCase().includes(term));
+        if (!matches) return false;
+      }
+
+      // 2. Type Filter
+      if (appliedFilters.type !== 'All') {
+        const requiredType = appliedFilters.type === 'Cash In' ? TransactionType.CASH_IN : TransactionType.CASH_OUT;
+        if (tx.type !== requiredType) return false;
+      }
+
+      // 3. Payment Modes
+      if (appliedFilters.modes.length > 0) {
+        if (!appliedFilters.modes.includes(tx.paymentMode)) return false;
+      }
+
+      // 4. Categories
+      if (appliedFilters.categories.length > 0) {
+        if (!appliedFilters.categories.includes(tx.category)) return false;
+      }
+
+      // 5. Members
+      if (appliedFilters.member && appliedFilters.member !== 'All') {
+        // Checking both createdBy (typical) or contactName
+        if (tx.createdBy !== appliedFilters.member && tx.contactName !== appliedFilters.member) return false;
+      }
+
+      // 6. Duration
+      if (appliedFilters.duration !== 'All Time') {
+        const txDate = new Date(tx.date);
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        
+        if (appliedFilters.duration === 'Today') {
+            if (txDate < startOfToday) return false;
+        } else if (appliedFilters.duration === 'Yesterday') {
+            const startOfYesterday = new Date(startOfToday);
+            startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+            if (txDate < startOfYesterday || txDate >= startOfToday) return false;
+        } else if (appliedFilters.duration === 'This Month') {
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            if (txDate < startOfMonth) return false;
+        } else if (appliedFilters.duration === 'Last Month') {
+            const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            if (txDate < startOfLastMonth || txDate >= startOfThisMonth) return false;
+        }
+      }
+
+      return true;
+    });
+  }, [transactions, searchTerm, appliedFilters]);
+
+  // Derived State: Summary Calculations based on Filtered View
+  const summary = useMemo(() => {
+    const cashIn = filteredTransactions
+      .filter(t => t.type === TransactionType.CASH_IN)
+      .reduce((sum, t) => sum + t.amount, 0);
+    const cashOut = filteredTransactions
+      .filter(t => t.type === TransactionType.CASH_OUT)
+      .reduce((sum, t) => sum + t.amount, 0);
+    return {
+      cashIn,
+      cashOut,
+      net: cashIn - cashOut
+    };
+  }, [filteredTransactions]);
 
   const handleOpenEntryDrawer = (type: TransactionType) => {
     setEntryType(type);
@@ -59,6 +183,8 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
     const type = entryType;
     const amount = Number(newTx.amount) || 0;
     
+    // In a real app, balanceAfter needs to be recalculated for all subsequent transactions
+    // For mock, we just prepend and use a simple running calc logic or backend logic
     const tx: Transaction = {
       id: Math.random().toString(36).substr(2, 9),
       bookId: book.id,
@@ -86,21 +212,23 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
     }
   };
 
-  const toggleMultiSelect = (item: string, currentList: string[], setter: (list: string[]) => void) => {
-    if (currentList.includes(item)) {
-      setter(currentList.filter(i => i !== item));
-    } else {
-      setter([...currentList, item]);
-    }
-  };
-
   const formatCurrency = (val: number) => Math.abs(val).toLocaleString();
 
   // Helper UI Components
   const FilterFooter = ({ onClear, onDone }: { onClear: () => void, onDone: () => void }) => (
-    <div className="flex items-center justify-between p-2 border-t border-gray-100 bg-gray-50">
-      <button onClick={onClear} className="px-3 py-1 text-xs font-medium text-gray-500 hover:text-gray-700">Clear</button>
-      <button onClick={onDone} className="px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-700">Done</button>
+    <div className="grid grid-cols-2 gap-3 p-3 border-t border-gray-100 bg-gray-50">
+      <button 
+        onClick={(e) => { e.stopPropagation(); onClear(); }}
+        className="flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+      >
+        Clear
+      </button>
+      <button 
+        onClick={(e) => { e.stopPropagation(); onDone(); }}
+        className="flex items-center justify-center px-4 py-2 text-sm font-bold text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors shadow-sm"
+      >
+        Done
+      </button>
     </div>
   );
 
@@ -110,6 +238,7 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
         type="text" 
         placeholder={placeholder}
         className="w-full text-xs border border-gray-300 rounded px-2 py-1.5 focus:outline-none focus:border-blue-500"
+        onClick={(e) => e.stopPropagation()}
        />
     </div>
   );
@@ -120,9 +249,9 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
         e.stopPropagation();
         onChange();
       }}
-      className={`flex items-center w-full px-4 py-2 cursor-pointer hover:bg-gray-50 ${checked ? 'bg-blue-50' : ''}`}
+      className={`flex items-center w-full px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors ${checked ? 'bg-blue-50' : ''}`}
     >
-      <div className={`flex items-center justify-center w-4 h-4 rounded-full border mr-3 flex-shrink-0 ${checked ? 'border-blue-600' : 'border-gray-400'}`}>
+      <div className={`flex items-center justify-center w-4 h-4 rounded-full border mr-3 flex-shrink-0 transition-colors ${checked ? 'border-blue-600' : 'border-gray-400'}`}>
           {checked && <div className="w-2 h-2 bg-blue-600 rounded-full" />}
       </div>
       <span className={`text-sm ${checked ? 'text-blue-600 font-medium' : 'text-gray-700'}`}>
@@ -137,9 +266,9 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
         e.stopPropagation();
         onChange();
       }}
-      className={`flex items-center w-full px-4 py-2 cursor-pointer hover:bg-gray-50 ${checked ? 'bg-blue-50' : ''}`}
+      className={`flex items-center w-full px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors ${checked ? 'bg-blue-50' : ''}`}
     >
-      <div className={`flex items-center justify-center w-4 h-4 rounded border mr-3 flex-shrink-0 ${checked ? 'bg-blue-600 border-blue-600' : 'border-gray-400 bg-white'}`}>
+      <div className={`flex items-center justify-center w-4 h-4 rounded border mr-3 flex-shrink-0 transition-colors ${checked ? 'bg-blue-600 border-blue-600' : 'border-gray-400 bg-white'}`}>
           {checked && <Check className="w-3 h-3 text-white" />}
       </div>
       <span className={`text-sm ${checked ? 'text-blue-600 font-medium' : 'text-gray-700'}`}>
@@ -185,9 +314,9 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
         <div className="flex flex-wrap items-center gap-3 mb-6">
           {/* Duration Filter */}
           <FilterDropdown 
-            label={`Duration: ${filterDuration}`} 
+            label={`Duration: ${appliedFilters.duration}`} 
             isOpen={openFilter === 'duration'} 
-            onToggle={() => toggleFilter('duration')}
+            onToggle={() => handleToggleFilter('duration')}
             onClose={() => setOpenFilter(null)}
             width="w-56"
           >
@@ -196,20 +325,23 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
                 <RadioItem 
                   key={opt}
                   label={opt}
-                  checked={filterDuration === opt}
-                  onChange={() => setFilterDuration(opt)}
+                  checked={tempFilters.duration === opt}
+                  onChange={() => updateTempFilter('duration', opt)}
                 />
               ))}
             </div>
-            <FilterFooter onClear={() => setFilterDuration('All Time')} onDone={() => setOpenFilter(null)} />
+            <FilterFooter 
+                onClear={() => handleClearFilter('duration')} 
+                onDone={handleApplyFilter} 
+            />
           </FilterDropdown>
 
           {/* Types Filter */}
           <FilterDropdown 
-            label={`Types: ${filterType}`} 
-            active={filterType !== 'All'}
+            label={`Types: ${appliedFilters.type}`} 
+            active={appliedFilters.type !== 'All'}
             isOpen={openFilter === 'types'} 
-            onToggle={() => toggleFilter('types')}
+            onToggle={() => handleToggleFilter('types')}
             onClose={() => setOpenFilter(null)}
             width="w-48"
           >
@@ -218,19 +350,22 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
                 <RadioItem 
                   key={opt.id}
                   label={opt.label}
-                  checked={filterType === opt.label}
-                  onChange={() => setFilterType(opt.label)}
+                  checked={tempFilters.type === opt.label}
+                  onChange={() => updateTempFilter('type', opt.label)}
                 />
               ))}
             </div>
-            <FilterFooter onClear={() => setFilterType('All')} onDone={() => setOpenFilter(null)} />
+            <FilterFooter 
+                onClear={() => handleClearFilter('type')} 
+                onDone={handleApplyFilter} 
+            />
           </FilterDropdown>
 
           {/* Contacts Filter */}
           <FilterDropdown 
             label={`Contacts: All`} 
             isOpen={openFilter === 'contacts'} 
-            onToggle={() => toggleFilter('contacts')}
+            onToggle={() => handleToggleFilter('contacts')}
             onClose={() => setOpenFilter(null)}
           >
              <div className="p-4 text-center">
@@ -242,9 +377,9 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
 
           {/* Members Filter */}
           <FilterDropdown 
-            label={`Members: ${filterMember ? filterMember : 'All'}`} 
+            label={`Members: ${appliedFilters.member ? appliedFilters.member : 'All'}`} 
             isOpen={openFilter === 'members'} 
-            onToggle={() => toggleFilter('members')}
+            onToggle={() => handleToggleFilter('members')}
             onClose={() => setOpenFilter(null)}
             width="w-64"
           >
@@ -254,19 +389,22 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
                 <RadioItem 
                   key={member}
                   label={member}
-                  checked={filterMember === member}
-                  onChange={() => setFilterMember(member)}
+                  checked={tempFilters.member === member}
+                  onChange={() => updateTempFilter('member', member)}
                 />
               ))}
             </div>
-            <FilterFooter onClear={() => setFilterMember(null)} onDone={() => setOpenFilter(null)} />
+            <FilterFooter 
+                onClear={() => handleClearFilter('member')} 
+                onDone={handleApplyFilter} 
+            />
           </FilterDropdown>
 
            {/* Payment Modes Filter */}
            <FilterDropdown 
-            label={`Payment Modes: ${filterModes.length ? filterModes.length : 'All'}`} 
+            label={`Payment Modes: ${appliedFilters.modes.length ? appliedFilters.modes.length : 'All'}`} 
             isOpen={openFilter === 'modes'} 
-            onToggle={() => toggleFilter('modes')}
+            onToggle={() => handleToggleFilter('modes')}
             onClose={() => setOpenFilter(null)}
             width="w-64"
           >
@@ -276,19 +414,22 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
                 <CheckboxItem 
                   key={mode}
                   label={mode}
-                  checked={filterModes.includes(mode)}
-                  onChange={() => toggleMultiSelect(mode, filterModes, setFilterModes)}
+                  checked={tempFilters.modes.includes(mode)}
+                  onChange={() => toggleMultiSelect(mode, tempFilters.modes, 'modes')}
                 />
               ))}
             </div>
-            <FilterFooter onClear={() => setFilterModes([])} onDone={() => setOpenFilter(null)} />
+            <FilterFooter 
+                onClear={() => handleClearFilter('modes')} 
+                onDone={handleApplyFilter} 
+            />
           </FilterDropdown>
 
            {/* Categories Filter */}
            <FilterDropdown 
-            label={`Categories: ${filterCategories.length ? filterCategories.length : 'All'}`} 
+            label={`Categories: ${appliedFilters.categories.length ? appliedFilters.categories.length : 'All'}`} 
             isOpen={openFilter === 'categories'} 
-            onToggle={() => toggleFilter('categories')}
+            onToggle={() => handleToggleFilter('categories')}
             onClose={() => setOpenFilter(null)}
             width="w-64"
           >
@@ -298,12 +439,15 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
                 <CheckboxItem 
                   key={cat}
                   label={cat}
-                  checked={filterCategories.includes(cat)}
-                  onChange={() => toggleMultiSelect(cat, filterCategories, setFilterCategories)}
+                  checked={tempFilters.categories.includes(cat)}
+                  onChange={() => toggleMultiSelect(cat, tempFilters.categories, 'categories')}
                 />
               ))}
             </div>
-            <FilterFooter onClear={() => setFilterCategories([])} onDone={() => setOpenFilter(null)} />
+            <FilterFooter 
+                onClear={() => handleClearFilter('categories')} 
+                onDone={handleApplyFilter} 
+            />
           </FilterDropdown>
         </div>
 
@@ -348,7 +492,7 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
              </div>
              <div>
                <p className="text-xs text-gray-500 font-semibold mb-0.5">Cash In</p>
-               <p className="text-xl font-bold text-gray-900">0</p>
+               <p className="text-xl font-bold text-gray-900">{formatCurrency(summary.cashIn)}</p>
              </div>
            </div>
            
@@ -358,7 +502,7 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
              </div>
              <div>
                <p className="text-xs text-gray-500 font-semibold mb-0.5">Cash Out</p>
-               <p className="text-xl font-bold text-gray-900">{formatCurrency(Math.abs(book.netBalance))}</p>
+               <p className="text-xl font-bold text-gray-900">{formatCurrency(summary.cashOut)}</p>
              </div>
            </div>
 
@@ -368,8 +512,8 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
              </div>
              <div>
                <p className="text-xs text-gray-500 font-semibold mb-0.5">Net Balance</p>
-               <p className={`text-xl font-bold ${book.netBalance >= 0 ? 'text-gray-900' : 'text-gray-900'}`}>
-                 {book.netBalance < 0 ? '-' : ''}{formatCurrency(book.netBalance)}
+               <p className={`text-xl font-bold ${summary.net >= 0 ? 'text-gray-900' : 'text-gray-900'}`}>
+                 {summary.net < 0 ? '-' : ''}{formatCurrency(summary.net)}
                </p>
              </div>
            </div>
@@ -395,65 +539,73 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
                 </tr>
               </thead>
               <tbody>
-                {transactions.map((tx) => {
-                  const isCashOut = tx.type === TransactionType.CASH_OUT;
-                  const amountColor = isCashOut ? 'text-[#dc2626]' : 'text-[#059669]'; 
-                  
-                  return (
-                    <tr 
-                      key={tx.id} 
-                      onClick={() => setSelectedTransaction(tx)}
-                      className="bg-white border-b hover:bg-gray-50 transition-colors group cursor-pointer"
-                    >
-                      <td className="w-4 p-4" onClick={(e) => e.stopPropagation()}>
-                        <input type="checkbox" className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500" />
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                         <div className="font-semibold text-gray-900">{new Date(tx.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
-                         <div className="text-xs text-gray-400 mt-0.5">{tx.time}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="font-medium text-gray-900 line-clamp-2">{tx.details}</div>
-                        <div className="text-xs text-gray-400 mt-0.5">by {tx.createdBy}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="bg-gray-100 text-gray-600 text-xs font-medium px-2.5 py-1 rounded border border-gray-200">
-                          {tx.category}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center text-gray-700">{tx.paymentMode}</td>
-                      <td className={`px-6 py-4 text-right font-bold ${amountColor} whitespace-nowrap`}>
-                        {Math.abs(tx.amount).toLocaleString()}
-                      </td>
-                      <td className="px-6 py-4 text-right whitespace-nowrap relative">
-                        <span className="font-semibold text-gray-900 block">{formatCurrency(tx.balanceAfter)}</span>
-                        
-                        <div className="hidden group-hover:flex items-center gap-1 absolute right-2 top-1/2 -translate-y-1/2 bg-gray-50 pl-2 shadow-sm border border-gray-100 rounded py-0.5 z-10">
-                            <button 
-                                onClick={(e) => { 
-                                    e.stopPropagation(); 
-                                    // Edit logic placeholder
-                                }}
-                                className="p-1.5 text-blue-600 hover:bg-blue-100 rounded transition-colors"
-                                title="Edit"
-                            >
-                                <Pencil className="w-4 h-4" />
-                            </button>
-                            <button 
-                                onClick={(e) => { 
-                                    e.stopPropagation();
-                                    handleDeleteTransaction(tx.id);
-                                }}
-                                className="p-1.5 text-red-600 hover:bg-red-100 rounded transition-colors"
-                                title="Delete"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                            </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {filteredTransactions.length > 0 ? (
+                  filteredTransactions.map((tx) => {
+                    const isCashOut = tx.type === TransactionType.CASH_OUT;
+                    const amountColor = isCashOut ? 'text-[#dc2626]' : 'text-[#059669]'; 
+                    
+                    return (
+                      <tr 
+                        key={tx.id} 
+                        onClick={() => setSelectedTransaction(tx)}
+                        className="bg-white border-b hover:bg-gray-50 transition-colors group cursor-pointer"
+                      >
+                        <td className="w-4 p-4" onClick={(e) => e.stopPropagation()}>
+                          <input type="checkbox" className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500" />
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="font-semibold text-gray-900">{new Date(tx.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+                          <div className="text-xs text-gray-400 mt-0.5">{tx.time}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="font-medium text-gray-900 line-clamp-2">{tx.details}</div>
+                          <div className="text-xs text-gray-400 mt-0.5">by {tx.createdBy}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="bg-gray-100 text-gray-600 text-xs font-medium px-2.5 py-1 rounded border border-gray-200">
+                            {tx.category}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center text-gray-700">{tx.paymentMode}</td>
+                        <td className={`px-6 py-4 text-right font-bold ${amountColor} whitespace-nowrap`}>
+                          {Math.abs(tx.amount).toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4 text-right whitespace-nowrap relative">
+                          <span className="font-semibold text-gray-900 block">{formatCurrency(tx.balanceAfter)}</span>
+                          
+                          <div className="hidden group-hover:flex items-center gap-1 absolute right-2 top-1/2 -translate-y-1/2 bg-gray-50 pl-2 shadow-sm border border-gray-100 rounded py-0.5 z-10 bg-white">
+                              <button 
+                                  onClick={(e) => { 
+                                      e.stopPropagation(); 
+                                      // Edit logic placeholder
+                                  }}
+                                  className="p-1.5 text-blue-600 hover:bg-blue-100 rounded transition-colors"
+                                  title="Edit"
+                              >
+                                  <Pencil className="w-4 h-4" />
+                              </button>
+                              <button 
+                                  onClick={(e) => { 
+                                      e.stopPropagation();
+                                      handleDeleteTransaction(tx.id);
+                                  }}
+                                  className="p-1.5 text-red-600 hover:bg-red-100 rounded transition-colors"
+                                  title="Delete"
+                              >
+                                  <Trash2 className="w-4 h-4" />
+                              </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={7} className="text-center py-10 text-gray-500">
+                       No transactions found matching your filters.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -465,7 +617,7 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
                <select className="border-gray-300 text-sm rounded py-1 px-2 focus:ring-blue-500 focus:border-blue-500">
                  <option>1</option>
                </select>
-               <span className="text-sm text-gray-600">of 6</span>
+               <span className="text-sm text-gray-600">of 1</span>
              </div>
              <div className="flex gap-1 ml-4">
                 <button className="p-1.5 border border-gray-300 rounded hover:bg-gray-50 text-gray-500 disabled:opacity-50">
