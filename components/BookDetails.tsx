@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { 
   ArrowLeft, Settings, UserPlus, CloudUpload, Download, Search, Plus, Minus, 
-  ChevronLeft, ChevronRight, Check, FileText, Pencil, Trash2
+  ChevronLeft, ChevronRight, Check, FileText, Pencil, Trash2, X
 } from 'lucide-react';
 import { Book, Transaction, TransactionType } from '../types';
 import { Button } from './ui/Button';
@@ -34,6 +34,7 @@ interface FilterState {
   member: string | null;
   modes: string[];
   categories: string[];
+  includeOpeningBalance: boolean;
 }
 
 const DEFAULT_FILTERS: FilterState = {
@@ -41,7 +42,8 @@ const DEFAULT_FILTERS: FilterState = {
   type: 'All',
   member: null,
   modes: [],
-  categories: []
+  categories: [],
+  includeOpeningBalance: false
 };
 
 export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
@@ -85,10 +87,21 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
   };
 
   const handleClearFilter = (key: keyof FilterState) => {
-    const newFilters = { ...appliedFilters, [key]: DEFAULT_FILTERS[key] };
+    const newFilters = { 
+        ...appliedFilters, 
+        [key]: DEFAULT_FILTERS[key],
+        // Reset dependent fields if necessary
+        ...(key === 'duration' ? { includeOpeningBalance: false } : {})
+    };
     setAppliedFilters(newFilters);
     // Also update temp filters to avoid stale state if immediately reopened
     setTempFilters(newFilters);
+    setOpenFilter(null);
+  };
+  
+  const handleResetFilters = () => {
+    setAppliedFilters(DEFAULT_FILTERS);
+    setTempFilters(DEFAULT_FILTERS);
     setOpenFilter(null);
   };
 
@@ -103,6 +116,15 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
       : [...currentList, item];
     updateTempFilter(key, newList);
   };
+
+  // Check if any filter is applied to show "Clear All"
+  const isFilterApplied = useMemo(() => {
+    return appliedFilters.duration !== 'All Time' || 
+           appliedFilters.type !== 'All' ||
+           appliedFilters.member !== null ||
+           appliedFilters.modes.length > 0 ||
+           appliedFilters.categories.length > 0;
+  }, [appliedFilters]);
 
   // Derived State: Filtered Transactions based on APPLIED filters
   const filteredTransactions = useMemo(() => {
@@ -224,6 +246,7 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
                     category: data.category || 'General',
                     paymentMode: data.paymentMode || 'Cash',
                     type: data.type, // Type might have changed
+                    contactName: data.contactName,
                     // Recalculating balance is complex in real app, simplified here
                     balanceAfter: t.balanceAfter 
                 };
@@ -242,6 +265,7 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
             details: data.remarks || '',
             category: data.category || 'General',
             paymentMode: data.paymentMode || 'Cash',
+            contactName: data.contactName,
             balanceAfter: (transactions[0]?.balanceAfter || 0) + (data.type === TransactionType.CASH_IN ? amount : -amount),
             attachments: [],
             createdBy: 'You'
@@ -355,20 +379,36 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
         <div className="flex flex-wrap items-center gap-3 mb-6">
           {/* Duration Filter */}
           <FilterDropdown 
-            label={`Duration: ${appliedFilters.duration}`} 
+            label={`${appliedFilters.duration}`} 
+            active={appliedFilters.duration !== 'All Time'}
             isOpen={openFilter === 'duration'} 
             onToggle={() => handleToggleFilter('duration')}
             onClose={() => setOpenFilter(null)}
-            width="w-56"
+            width="w-60"
           >
             <div className="py-2">
               {DURATION_OPTIONS.map(opt => (
-                <RadioItem 
-                  key={opt}
-                  label={opt}
-                  checked={tempFilters.duration === opt}
-                  onChange={() => updateTempFilter('duration', opt)}
-                />
+                <React.Fragment key={opt}>
+                    <RadioItem 
+                    label={opt}
+                    checked={tempFilters.duration === opt}
+                    onChange={() => updateTempFilter('duration', opt)}
+                    />
+                    {opt === 'Today' && tempFilters.duration === 'Today' && (
+                        <div 
+                            className="flex items-center px-4 py-2 cursor-pointer hover:bg-gray-50 pl-11"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                updateTempFilter('includeOpeningBalance', !tempFilters.includeOpeningBalance);
+                            }}
+                        >
+                            <div className={`flex items-center justify-center w-3.5 h-3.5 rounded border mr-2 flex-shrink-0 transition-colors ${tempFilters.includeOpeningBalance ? 'bg-blue-600 border-blue-600' : 'border-gray-400 bg-white'}`}>
+                                {tempFilters.includeOpeningBalance && <Check className="w-3 h-3 text-white" />}
+                            </div>
+                            <span className="text-xs text-gray-700">Include opening balance</span>
+                        </div>
+                    )}
+                </React.Fragment>
               ))}
             </div>
             <FilterFooter 
@@ -419,6 +459,7 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
           {/* Members Filter */}
           <FilterDropdown 
             label={`Members: ${appliedFilters.member ? appliedFilters.member : 'All'}`} 
+            active={appliedFilters.member !== null}
             isOpen={openFilter === 'members'} 
             onToggle={() => handleToggleFilter('members')}
             onClose={() => setOpenFilter(null)}
@@ -444,6 +485,7 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
            {/* Payment Modes Filter */}
            <FilterDropdown 
             label={`Payment Modes: ${appliedFilters.modes.length ? appliedFilters.modes.length : 'All'}`} 
+            active={appliedFilters.modes.length > 0}
             isOpen={openFilter === 'modes'} 
             onToggle={() => handleToggleFilter('modes')}
             onClose={() => setOpenFilter(null)}
@@ -469,6 +511,7 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
            {/* Categories Filter */}
            <FilterDropdown 
             label={`Categories: ${appliedFilters.categories.length ? appliedFilters.categories.length : 'All'}`} 
+            active={appliedFilters.categories.length > 0}
             isOpen={openFilter === 'categories'} 
             onToggle={() => handleToggleFilter('categories')}
             onClose={() => setOpenFilter(null)}
@@ -490,6 +533,16 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
                 onDone={handleApplyFilter} 
             />
           </FilterDropdown>
+
+          {/* Clear All Button */}
+          {isFilterApplied && (
+            <button 
+                onClick={handleResetFilters}
+                className="flex items-center gap-1 text-sm font-semibold text-blue-600 hover:text-blue-700 ml-2 transition-colors animate-in fade-in"
+            >
+                <X className="w-4 h-4" /> Clear All
+            </button>
+          )}
         </div>
 
         {/* Search & Actions Row */}
@@ -601,8 +654,13 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
                           <div className="text-xs text-gray-400 mt-0.5">{tx.time}</div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="font-medium text-gray-900 line-clamp-2">{tx.details}</div>
-                          <div className="text-xs text-gray-400 mt-0.5">by {tx.createdBy}</div>
+                          {tx.contactName && (
+                             <div className="font-bold text-gray-900 text-sm mb-0.5">
+                                {tx.contactName}
+                             </div>
+                          )}
+                          <div className="text-sm text-gray-600 line-clamp-2 mb-0.5">{tx.details}</div>
+                          <div className="text-xs text-gray-400">by {tx.createdBy}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="bg-gray-100 text-gray-600 text-xs font-medium px-2.5 py-1 rounded border border-gray-200">
@@ -645,11 +703,20 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
                     );
                   })
                 ) : (
-                  <tr>
-                    <td colSpan={8} className="text-center py-10 text-gray-500">
-                       No transactions found matching your filters.
-                    </td>
-                  </tr>
+                    <tr>
+                        <td colSpan={8}>
+                            <div className="flex flex-col items-center justify-center py-16">
+                                <p className="text-lg font-medium text-gray-900 mb-4">
+                                    {appliedFilters.duration === 'Today' 
+                                        ? 'No entries added today!' 
+                                        : `No entries found for "${appliedFilters.duration}"`}
+                                </p>
+                                <Button onClick={handleResetFilters}>
+                                    Reset Filters
+                                </Button>
+                            </div>
+                        </td>
+                    </tr>
                 )}
               </tbody>
             </table>

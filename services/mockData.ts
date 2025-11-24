@@ -42,17 +42,21 @@ const generateTransactions = (bookId: string, count: number): Transaction[] => {
     const amount = Math.floor(Math.random() * 50000) + 1000;
     runningBalance += isCashIn ? amount : -amount;
 
+    const date = new Date(Date.now() - (i * 86400000));
+    // Format time as hh:mm AM/PM
+    const timeString = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+
     transactions.push({
       id: `t${i}`,
       bookId,
       type: isCashIn ? TransactionType.CASH_IN : TransactionType.CASH_OUT,
-      date: new Date(Date.now() - (i * 86400000)).toISOString(),
-      time: '17:05',
+      date: date.toISOString(),
+      time: timeString,
       amount: amount,
       details: isCashIn ? 'Payment Received' : 'Material Purchase',
       category: isCashIn ? 'Sales' : 'Expense',
       paymentMode: Math.random() > 0.5 ? 'Cash' : 'bKash',
-      contactName: 'Rafiq Bhai',
+      contactName: Math.random() > 0.7 ? (isCashIn ? 'Rafiq Bhai (Customer)' : 'Rafiq Bhai (Supplier)') : undefined,
       attachments: [],
       balanceAfter: runningBalance,
       createdBy: 'You'
