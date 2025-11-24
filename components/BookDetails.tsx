@@ -1,13 +1,15 @@
+
 import React, { useState } from 'react';
 import { 
   ArrowLeft, Settings, UserPlus, CloudUpload, Download, Search, Plus, Minus, 
-  ChevronLeft, ChevronRight, FileText
+  ChevronLeft, ChevronRight, Check, FileText, ChevronDown
 } from 'lucide-react';
 import { Book, Transaction, TransactionType } from '../types';
 import { Button } from './ui/Button';
 import { FilterDropdown } from './ui/FilterDropdown';
 import { MOCK_TRANSACTIONS } from '../services/mockData';
 import { EntryDrawer } from './EntryDrawer';
+import { EntryDetailsDrawer } from './EntryDetailsDrawer';
 
 interface BookDetailsProps {
   book: Book;
@@ -27,15 +29,18 @@ const MEMBERS = ['You', 'MD SAIFUL ISLAM', 'Md. Shoriful Islam'];
 
 export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
   const [transactions, setTransactions] = useState<Transaction[]>(MOCK_TRANSACTIONS);
+  
+  // Drawer States
   const [isEntryDrawerOpen, setIsEntryDrawerOpen] = useState(false);
   const [entryType, setEntryType] = useState<TransactionType>(TransactionType.CASH_IN);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   
   // Filter States
   const [openFilter, setOpenFilter] = useState<string | null>(null);
   
   const [filterDuration, setFilterDuration] = useState('All Time');
   const [filterType, setFilterType] = useState('All');
-  const [filterMember, setFilterMember] = useState<string | null>(null); // Single select for member based on typical filter behavior
+  const [filterMember, setFilterMember] = useState<string | null>(null);
   const [filterModes, setFilterModes] = useState<string[]>([]);
   const [filterCategories, setFilterCategories] = useState<string[]>([]);
   
@@ -45,22 +50,26 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
     setOpenFilter(openFilter === name ? null : name);
   };
 
-  const handleOpenDrawer = (type: TransactionType) => {
+  const handleOpenEntryDrawer = (type: TransactionType) => {
     setEntryType(type);
     setIsEntryDrawerOpen(true);
   };
 
   const handleSaveTransaction = (newTx: Partial<Transaction>) => {
+    const type = entryType;
+    const amount = Number(newTx.amount) || 0;
+    
     const tx: Transaction = {
       id: Math.random().toString(36).substr(2, 9),
       bookId: book.id,
+      type: type,
       date: newTx.date || new Date().toISOString(),
       time: newTx.time || '12:00',
-      amount: newTx.amount || 0,
+      amount: amount,
       details: newTx.details || '',
       category: newTx.category || 'General',
       paymentMode: newTx.paymentMode || 'Cash',
-      balanceAfter: (transactions[0]?.balanceAfter || 0) + (entryType === TransactionType.CASH_IN ? (newTx.amount || 0) : -(newTx.amount || 0)),
+      balanceAfter: (transactions[0]?.balanceAfter || 0) + (type === TransactionType.CASH_IN ? amount : -amount),
       attachments: [],
       createdBy: 'You'
     };
@@ -76,7 +85,9 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
     }
   };
 
-  // Helper Components for Filter UI
+  const formatCurrency = (val: number) => Math.abs(val).toLocaleString();
+
+  // Helper UI Components
   const FilterFooter = ({ onClear, onDone }: { onClear: () => void, onDone: () => void }) => (
     <div className="flex items-center justify-between p-2 border-t border-gray-100 bg-gray-50">
       <button onClick={onClear} className="px-3 py-1 text-xs font-medium text-gray-500 hover:text-gray-700">Clear</button>
@@ -95,30 +106,38 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
   );
 
   const RadioItem = ({ label, checked, onChange }: { label: string, checked: boolean, onChange: () => void }) => (
-    <label className={`flex items-center w-full px-4 py-2 cursor-pointer hover:bg-gray-50 ${checked ? 'bg-blue-50' : ''}`}>
+    <div 
+      onClick={(e) => {
+        e.stopPropagation();
+        onChange();
+      }}
+      className={`flex items-center w-full px-4 py-2 cursor-pointer hover:bg-gray-50 ${checked ? 'bg-blue-50' : ''}`}
+    >
       <div className={`flex items-center justify-center w-4 h-4 rounded-full border mr-3 flex-shrink-0 ${checked ? 'border-blue-600' : 'border-gray-400'}`}>
           {checked && <div className="w-2 h-2 bg-blue-600 rounded-full" />}
       </div>
       <span className={`text-sm ${checked ? 'text-blue-600 font-medium' : 'text-gray-700'}`}>
         {label}
       </span>
-      <input type="radio" className="hidden" checked={checked} onChange={onChange} />
-    </label>
+    </div>
   );
 
   const CheckboxItem = ({ label, checked, onChange }: { label: string, checked: boolean, onChange: () => void }) => (
-    <label className={`flex items-center w-full px-4 py-2 cursor-pointer hover:bg-gray-50 ${checked ? 'bg-blue-50' : ''}`}>
+    <div 
+      onClick={(e) => {
+        e.stopPropagation();
+        onChange();
+      }}
+      className={`flex items-center w-full px-4 py-2 cursor-pointer hover:bg-gray-50 ${checked ? 'bg-blue-50' : ''}`}
+    >
       <div className={`flex items-center justify-center w-4 h-4 rounded border mr-3 flex-shrink-0 ${checked ? 'bg-blue-600 border-blue-600' : 'border-gray-400 bg-white'}`}>
           {checked && <Check className="w-3 h-3 text-white" />}
       </div>
       <span className={`text-sm ${checked ? 'text-blue-600 font-medium' : 'text-gray-700'}`}>
         {label}
       </span>
-      <input type="checkbox" className="hidden" checked={checked} onChange={onChange} />
-    </label>
+    </div>
   );
-
-  const formatCurrency = (val: number) => Math.abs(val).toLocaleString();
 
   return (
     <div className="flex flex-col h-full bg-gray-50">
@@ -154,7 +173,7 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
       <div className="bg-white px-4 lg:px-6 py-4 border-b border-gray-200">
         
         {/* Filter Row */}
-        <div className="flex flex-wrap items-center gap-3 mb-4">
+        <div className="flex flex-wrap items-center gap-3 mb-6">
           {/* Duration Filter */}
           <FilterDropdown 
             label={`Duration: ${filterDuration}`} 
@@ -169,7 +188,7 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
                   key={opt}
                   label={opt}
                   checked={filterDuration === opt}
-                  onChange={() => { setFilterDuration(opt); setOpenFilter(null); }}
+                  onChange={() => setFilterDuration(opt)}
                 />
               ))}
             </div>
@@ -296,13 +315,13 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
           
           <div className="flex items-center gap-3 w-full md:w-auto">
              <button 
-              onClick={() => handleOpenDrawer(TransactionType.CASH_IN)}
+              onClick={() => handleOpenEntryDrawer(TransactionType.CASH_IN)}
               className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-[#059669] text-white px-6 py-2.5 rounded font-bold text-sm hover:bg-[#047857] transition-colors shadow-sm whitespace-nowrap h-[40px]"
              >
                <Plus className="w-4 h-4" /> Cash In
              </button>
              <button 
-               onClick={() => handleOpenDrawer(TransactionType.CASH_OUT)}
+               onClick={() => handleOpenEntryDrawer(TransactionType.CASH_OUT)}
                className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-[#dc2626] text-white px-6 py-2.5 rounded font-bold text-sm hover:bg-[#b91c1c] transition-colors shadow-sm whitespace-nowrap h-[40px]"
              >
                <Minus className="w-4 h-4" /> Cash Out
@@ -368,12 +387,16 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
               </thead>
               <tbody>
                 {transactions.map((tx) => {
-                  const isCashOut = tx.amount > 0 && tx.category !== 'Sales'; 
-                  const amountColor = tx.amount > 0 ? 'text-[#dc2626]' : 'text-[#059669]'; 
+                  const isCashOut = tx.type === TransactionType.CASH_OUT;
+                  const amountColor = isCashOut ? 'text-[#dc2626]' : 'text-[#059669]'; 
                   
                   return (
-                    <tr key={tx.id} className="bg-white border-b hover:bg-gray-50 transition-colors group">
-                      <td className="w-4 p-4">
+                    <tr 
+                      key={tx.id} 
+                      onClick={() => setSelectedTransaction(tx)}
+                      className="bg-white border-b hover:bg-gray-50 transition-colors group cursor-pointer"
+                    >
+                      <td className="w-4 p-4" onClick={(e) => e.stopPropagation()}>
                         <input type="checkbox" className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500" />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -424,12 +447,18 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
         </div>
       </div>
       
-      {/* Slide Over / Modal */}
+      {/* Create Transaction Drawer */}
       <EntryDrawer 
         isOpen={isEntryDrawerOpen} 
         onClose={() => setIsEntryDrawerOpen(false)}
         type={entryType}
         onSave={handleSaveTransaction}
+      />
+
+      {/* View Transaction Details Drawer */}
+      <EntryDetailsDrawer
+        transaction={selectedTransaction}
+        onClose={() => setSelectedTransaction(null)}
       />
     </div>
   );

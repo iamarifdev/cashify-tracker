@@ -29,6 +29,7 @@ export enum TransactionType {
 export interface Transaction {
   id: string;
   bookId: string;
+  type: TransactionType;
   date: string; // ISO date
   time: string; // HH:mm format
   amount: number;

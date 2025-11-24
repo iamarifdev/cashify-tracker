@@ -37,6 +37,7 @@ const generateTransactions = (bookId: string, count: number): Transaction[] => {
     transactions.push({
       id: `t${i}`,
       bookId,
+      type: isCashIn ? TransactionType.CASH_IN : TransactionType.CASH_OUT,
       date: new Date(Date.now() - (i * 86400000)).toISOString(),
       time: '17:05',
       amount: amount,
