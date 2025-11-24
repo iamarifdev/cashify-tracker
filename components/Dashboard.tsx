@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Book } from 'lucide-react';
+import { Search, Book, Pencil, Copy, UserPlus, CornerUpRight } from 'lucide-react';
 import { Book as BookType, Business, User as UserType } from '../types';
 import { MOCK_BOOKS } from '../services/mockData';
 import { TopBar } from './dashboard/TopBar';
@@ -81,7 +81,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBookSelect, user, curren
                     <input 
                       type="text" 
                       placeholder="Search by book name..." 
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500 text-sm shadow-sm"
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm shadow-sm h-[38px]"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -123,26 +123,61 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBookSelect, user, curren
                 {filteredBooks.length > 0 ? (
                   filteredBooks.map((book) => (
                       <div 
-                      key={book.id} 
-                      onClick={() => onBookSelect(book)}
-                      className="flex items-center justify-between p-5 border-b border-gray-100 hover:bg-blue-50 cursor-pointer transition-colors group last:border-0"
+                        key={book.id} 
+                        onClick={() => onBookSelect(book)}
+                        className="flex items-center justify-between p-5 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors group last:border-0"
                       >
-                      <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 group-hover:bg-blue-100 transition-colors">
-                          <Book className="w-5 h-5" />
-                          </div>
-                          <div>
-                          <h3 className="font-semibold text-gray-900 text-base">{book.name}</h3>
-                          <p className="text-xs text-gray-500 mt-0.5">
-                              {book.membersCount} members • Updated {new Date(book.lastUpdated).toLocaleDateString()}
-                          </p>
-                          </div>
-                      </div>
-                      <div className="text-right">
-                          <p className={`font-bold text-base ${getBalanceColor(book.netBalance)}`}>
-                          {book.netBalance.toLocaleString()}
-                          </p>
-                      </div>
+                        <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 group-hover:bg-white group-hover:shadow-sm transition-all border border-transparent group-hover:border-gray-200">
+                              <Book className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <h3 className="font-semibold text-gray-900 text-base">{book.name}</h3>
+                              <p className="text-xs text-gray-500 mt-0.5">
+                                  {book.membersCount} members • Updated {new Date(book.lastUpdated).toLocaleDateString()}
+                              </p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-6">
+                            <div className="text-right">
+                                <p className={`font-bold text-base ${getBalanceColor(book.netBalance)}`}>
+                                {book.netBalance.toLocaleString()}
+                                </p>
+                            </div>
+
+                            {/* Hover Actions */}
+                            <div className="hidden group-hover:flex items-center gap-1 animate-in slide-in-from-right-4 duration-200">
+                                <button 
+                                    onClick={(e) => { e.stopPropagation(); }} 
+                                    className="p-2 text-blue-600 hover:bg-white hover:shadow-sm rounded-full transition-all"
+                                    title="Edit"
+                                >
+                                    <Pencil className="w-4 h-4" />
+                                </button>
+                                <button 
+                                    onClick={(e) => { e.stopPropagation(); }} 
+                                    className="p-2 text-blue-600 hover:bg-white hover:shadow-sm rounded-full transition-all"
+                                    title="Duplicate"
+                                >
+                                    <Copy className="w-4 h-4" />
+                                </button>
+                                <button 
+                                    onClick={(e) => { e.stopPropagation(); }} 
+                                    className="p-2 text-blue-600 hover:bg-white hover:shadow-sm rounded-full transition-all"
+                                    title="Add Member"
+                                >
+                                    <UserPlus className="w-4 h-4" />
+                                </button>
+                                <button 
+                                    onClick={(e) => { e.stopPropagation(); }} 
+                                    className="p-2 text-red-600 hover:bg-white hover:shadow-sm rounded-full transition-all"
+                                    title="Move"
+                                >
+                                    <CornerUpRight className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
                       </div>
                   ))
                 ) : (
