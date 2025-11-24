@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { LayoutGrid, ChevronDown, Plus, LogOut, Download } from 'lucide-react';
+import { LayoutGrid, ChevronDown, Plus, LogOut, Download, Menu } from 'lucide-react';
 import { Business, User } from '../../types';
 import { MOCK_BUSINESSES } from '../../services/mockData';
 
@@ -8,6 +8,7 @@ interface TopBarProps {
   currentBusiness: Business;
   onBusinessChange: (business: Business) => void;
   onLogout: () => void;
+  onSidebarOpen: () => void;
 }
 
 // Hook for handling click outside
@@ -28,7 +29,7 @@ function useClickOutside(ref: React.RefObject<HTMLElement | null>, handler: (eve
   }, [ref, handler]);
 }
 
-export const TopBar: React.FC<TopBarProps> = ({ user, currentBusiness, onBusinessChange, onLogout }) => {
+export const TopBar: React.FC<TopBarProps> = ({ user, currentBusiness, onBusinessChange, onLogout, onSidebarOpen }) => {
   const [isBusinessMenuOpen, setBusinessMenuOpen] = useState(false);
   const [isProfileMenuOpen, setProfileMenuOpen] = useState(false);
   const [businessSearch, setBusinessSearch] = useState('');
@@ -44,17 +45,25 @@ export const TopBar: React.FC<TopBarProps> = ({ user, currentBusiness, onBusines
   );
 
   return (
-    <div className="bg-white border-b border-gray-200 h-16 relative z-20 shadow-sm">
+    <div className="bg-white border-b border-gray-200 h-16 relative z-20 shadow-sm shrink-0">
       <div className="h-full px-4 lg:px-8 flex items-center justify-between relative">
           
-          {/* Left Spacer */}
-          <div className="w-1/3 hidden md:block"></div>
+          {/* Left Section (Sidebar Toggle & Spacer) */}
+          <div className="w-1/3 flex items-center">
+             <button 
+                onClick={onSidebarOpen} 
+                className="lg:hidden p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-md"
+                aria-label="Open Sidebar"
+             >
+               <Menu className="w-6 h-6" />
+             </button>
+          </div>
 
           {/* Center - Business Selector */}
-          <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 w-full md:w-auto flex justify-center" ref={businessMenuRef}>
+          <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 w-full md:w-auto flex justify-center pointer-events-none md:pointer-events-auto" ref={businessMenuRef}>
               <button 
                 onClick={() => setBusinessMenuOpen(!isBusinessMenuOpen)}
-                className="flex items-center justify-between gap-2 text-sm font-medium text-gray-900 bg-white hover:bg-gray-50 px-4 py-2.5 rounded border border-gray-200 transition-all shadow-sm min-w-[200px] md:min-w-[280px] max-w-[320px]"
+                className="flex items-center justify-between gap-2 text-sm font-medium text-gray-900 bg-white hover:bg-gray-50 px-4 py-2.5 rounded border border-gray-200 transition-all shadow-sm min-w-[200px] md:min-w-[280px] max-w-[320px] pointer-events-auto"
               >
                  <div className="flex items-center gap-2 truncate">
                     <div className="p-0.5 rounded bg-blue-50 text-blue-600">
@@ -67,7 +76,7 @@ export const TopBar: React.FC<TopBarProps> = ({ user, currentBusiness, onBusines
 
               {/* Business Dropdown */}
               {isBusinessMenuOpen && (
-                <div className="absolute top-full mt-2 w-[320px] bg-white rounded shadow-xl border border-gray-200 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                <div className="absolute top-full mt-2 w-[320px] bg-white rounded shadow-xl border border-gray-200 overflow-hidden animate-in fade-in zoom-in-95 duration-100 pointer-events-auto">
                   <div className="p-3 border-b border-gray-100">
                     <input 
                       type="text"

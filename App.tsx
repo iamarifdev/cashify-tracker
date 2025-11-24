@@ -1,12 +1,11 @@
-
 import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Login } from './components/Login';
 import { Dashboard } from './components/Dashboard';
 import { BookDetails } from './components/BookDetails';
+import { TopBar } from './components/dashboard/TopBar';
 import { User, Book, ViewState, Business } from './types';
 import { MOCK_BUSINESSES } from './services/mockData';
-import { Menu } from 'lucide-react';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -75,31 +74,32 @@ const App: React.FC = () => {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         
-        {/* Mobile Header Trigger */}
-        <div className="lg:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between">
-           <button onClick={() => setIsSidebarOpen(true)} className="text-gray-600">
-             <Menu className="w-6 h-6" />
-           </button>
-           <span className="font-bold text-lg text-blue-600">CASHIFY</span>
-           <div className="w-6" /> {/* Spacer for centering */}
-        </div>
-
-        {viewState === 'DASHBOARD' && user && (
-          <Dashboard 
-            onBookSelect={handleBookSelect} 
+        {/* Global TopBar */}
+        {user && (
+          <TopBar 
             user={user}
             currentBusiness={currentBusiness}
             onBusinessChange={handleBusinessChange}
             onLogout={handleLogout}
+            onSidebarOpen={() => setIsSidebarOpen(true)}
           />
         )}
 
-        {viewState === 'BOOK_DETAILS' && selectedBook && (
-          <BookDetails 
-            book={selectedBook} 
-            onBack={handleBackToDashboard} 
-          />
-        )}
+        <div className="flex-1 overflow-hidden relative">
+          {viewState === 'DASHBOARD' && (
+            <Dashboard 
+              onBookSelect={handleBookSelect} 
+              currentBusiness={currentBusiness}
+            />
+          )}
+
+          {viewState === 'BOOK_DETAILS' && selectedBook && (
+            <BookDetails 
+              book={selectedBook} 
+              onBack={handleBackToDashboard} 
+            />
+          )}
+        </div>
       </div>
     </div>
   );

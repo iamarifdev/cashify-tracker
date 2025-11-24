@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { 
   ArrowLeft, Settings, UserPlus, CloudUpload, Download, Search, Plus, Minus, 
-  ChevronLeft, ChevronRight, Check, FileText, ChevronDown
+  ChevronLeft, ChevronRight, Check, FileText, ChevronDown, Pencil, Trash2
 } from 'lucide-react';
 import { Book, Transaction, TransactionType } from '../types';
 import { Button } from './ui/Button';
@@ -75,6 +75,15 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
     };
     setTransactions([tx, ...transactions]);
     setIsEntryDrawerOpen(false);
+  };
+
+  const handleDeleteTransaction = (id: string) => {
+    if (confirm('Are you sure you want to delete this entry?')) {
+        setTransactions(prev => prev.filter(t => t.id !== id));
+        if (selectedTransaction?.id === id) {
+            setSelectedTransaction(null);
+        }
+    }
   };
 
   const toggleMultiSelect = (item: string, currentList: string[], setter: (list: string[]) => void) => {
@@ -416,8 +425,31 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
                       <td className={`px-6 py-4 text-right font-bold ${amountColor} whitespace-nowrap`}>
                         {Math.abs(tx.amount).toLocaleString()}
                       </td>
-                      <td className="px-6 py-4 text-right font-semibold text-gray-900 whitespace-nowrap">
-                        {formatCurrency(tx.balanceAfter)}
+                      <td className="px-6 py-4 text-right whitespace-nowrap relative">
+                        <span className="font-semibold text-gray-900 block">{formatCurrency(tx.balanceAfter)}</span>
+                        
+                        <div className="hidden group-hover:flex items-center gap-1 absolute right-2 top-1/2 -translate-y-1/2 bg-gray-50 pl-2 shadow-sm border border-gray-100 rounded py-0.5 z-10">
+                            <button 
+                                onClick={(e) => { 
+                                    e.stopPropagation(); 
+                                    // Edit logic placeholder
+                                }}
+                                className="p-1.5 text-blue-600 hover:bg-blue-100 rounded transition-colors"
+                                title="Edit"
+                            >
+                                <Pencil className="w-4 h-4" />
+                            </button>
+                            <button 
+                                onClick={(e) => { 
+                                    e.stopPropagation();
+                                    handleDeleteTransaction(tx.id);
+                                }}
+                                className="p-1.5 text-red-600 hover:bg-red-100 rounded transition-colors"
+                                title="Delete"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -459,6 +491,7 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
       <EntryDetailsDrawer
         transaction={selectedTransaction}
         onClose={() => setSelectedTransaction(null)}
+        onDelete={handleDeleteTransaction}
       />
     </div>
   );

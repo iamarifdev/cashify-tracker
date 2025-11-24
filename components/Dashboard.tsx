@@ -1,18 +1,14 @@
 import React, { useState } from 'react';
 import { Search, Book, Pencil, Copy, UserPlus, CornerUpRight } from 'lucide-react';
-import { Book as BookType, Business, User as UserType } from '../types';
+import { Book as BookType, Business } from '../types';
 import { MOCK_BOOKS } from '../services/mockData';
-import { TopBar } from './dashboard/TopBar';
 import { RoleBanner } from './dashboard/RoleBanner';
 import { PromoSidebar } from './dashboard/PromoSidebar';
 import { FilterDropdown } from './ui/FilterDropdown';
 
 interface DashboardProps {
   onBookSelect: (book: BookType) => void;
-  user: UserType;
   currentBusiness: Business;
-  onBusinessChange: (business: Business) => void;
-  onLogout: () => void;
 }
 
 const SORT_OPTIONS = [
@@ -23,7 +19,7 @@ const SORT_OPTIONS = [
   'Last Created'
 ];
 
-export const Dashboard: React.FC<DashboardProps> = ({ onBookSelect, user, currentBusiness, onBusinessChange, onLogout }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ onBookSelect, currentBusiness }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOption, setSortOption] = useState('Last Updated');
   const [isSortOpen, setIsSortOpen] = useState(false);
@@ -37,7 +33,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBookSelect, user, curren
         case 'Name (A to Z)': return a.name.localeCompare(b.name);
         case 'Net Balance (High to Low)': return b.netBalance - a.netBalance;
         case 'Net Balance (Low to High)': return a.netBalance - b.netBalance;
-        case 'Last Created': return new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime(); // Mock logic
+        case 'Last Created': return new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime();
         default: return new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime();
       }
     });
@@ -56,13 +52,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBookSelect, user, curren
 
   return (
     <div className="flex flex-col h-full bg-[#f9fafb]">
-      <TopBar 
-        user={user} 
-        currentBusiness={currentBusiness} 
-        onBusinessChange={onBusinessChange} 
-        onLogout={onLogout} 
-      />
-
       <div className="flex-1 overflow-auto p-4 lg:p-8">
         
         <h2 className="text-xl font-bold text-gray-900 mb-6">{currentBusiness.name}</h2>
