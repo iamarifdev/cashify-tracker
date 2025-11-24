@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Login } from './components/Login';
@@ -46,6 +47,17 @@ const App: React.FC = () => {
     setViewState('DASHBOARD');
   };
 
+  const handleBusinessChange = (business: Business) => {
+    setCurrentBusiness(business);
+    // If a book was selected, we might want to deselect it if it doesn't belong to the new business
+    // But since the view is likely DASHBOARD when changing business, this is handled.
+    // If we are in BOOK_DETAILS, this would force back to dashboard
+    if (viewState === 'BOOK_DETAILS') {
+      setViewState('DASHBOARD');
+      setSelectedBook(null);
+    }
+  };
+
   if (viewState === 'LOGIN') {
     return <Login onLogin={handleLogin} />;
   }
@@ -77,6 +89,7 @@ const App: React.FC = () => {
             onBookSelect={handleBookSelect} 
             user={user}
             currentBusiness={currentBusiness}
+            onBusinessChange={handleBusinessChange}
             onLogout={handleLogout}
           />
         )}

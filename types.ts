@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   name: string;
@@ -17,6 +18,7 @@ export interface Book {
   membersCount: number;
   lastUpdated: string; // ISO date string
   netBalance: number;
+  businessId: string;
 }
 
 export enum TransactionType {

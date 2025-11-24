@@ -1,3 +1,4 @@
+
 import { Book, Business, Transaction, TransactionType } from '../types';
 
 export const MOCK_USER = {
@@ -9,15 +10,19 @@ export const MOCK_USER = {
 
 export const MOCK_BUSINESSES: Business[] = [
   { id: 'b1', name: "Ariful Islam's Business", role: 'Owner' },
-  { id: 'b2', name: "Brothers Communications", role: 'Viewer' }
+  { id: 'b2', name: "Brothers Communications", role: 'Viewer' },
+  { id: 'b3', name: "Test", role: 'Editor' }
 ];
 
 export const MOCK_BOOKS: Book[] = [
-  { id: 'book1', name: "Building Home", membersCount: 2, lastUpdated: new Date().toISOString(), netBalance: -3523569 },
-  { id: 'book2', name: "Brothers Cable Network Income", membersCount: 2, lastUpdated: new Date(Date.now() - 86400000).toISOString(), netBalance: 58085 },
-  { id: 'book3', name: "Messers Hujera Traders", membersCount: 2, lastUpdated: new Date(Date.now() - 172800000).toISOString(), netBalance: 877504 },
-  { id: 'book4', name: "Transactions with Sharif", membersCount: 2, lastUpdated: new Date(Date.now() - 200000000).toISOString(), netBalance: -6020 },
-  { id: 'book5', name: "Business Investment", membersCount: 2, lastUpdated: new Date(Date.now() - 300000000).toISOString(), netBalance: -1004700 },
+  { id: 'book1', name: "Building Home", membersCount: 2, lastUpdated: new Date().toISOString(), netBalance: -3523569, businessId: 'b1' },
+  { id: 'book2', name: "Brothers Cable Network Income", membersCount: 2, lastUpdated: new Date(Date.now() - 86400000).toISOString(), netBalance: 58085, businessId: 'b1' },
+  { id: 'book3', name: "Messers Hujera Traders", membersCount: 2, lastUpdated: new Date(Date.now() - 172800000).toISOString(), netBalance: 877504, businessId: 'b1' },
+  { id: 'book4', name: "Transactions with Sharif", membersCount: 2, lastUpdated: new Date(Date.now() - 200000000).toISOString(), netBalance: -6020, businessId: 'b1' },
+  { id: 'book5', name: "Business Investment", membersCount: 2, lastUpdated: new Date(Date.now() - 300000000).toISOString(), netBalance: -1004700, businessId: 'b1' },
+  // Books for second business
+  { id: 'book6', name: "Office Expenses", membersCount: 5, lastUpdated: new Date().toISOString(), netBalance: -25000, businessId: 'b2' },
+  { id: 'book7', name: "Client Payments", membersCount: 3, lastUpdated: new Date(Date.now() - 400000000).toISOString(), netBalance: 150000, businessId: 'b2' },
 ];
 
 const generateTransactions = (bookId: string, count: number): Transaction[] => {
