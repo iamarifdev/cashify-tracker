@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   ArrowLeft, Settings, UserPlus, CloudUpload, Download, Search, Plus, Minus, 
-  ChevronLeft, ChevronRight, Check, X, FileText
+  ChevronLeft, ChevronRight, FileText
 } from 'lucide-react';
 import { Book, Transaction, TransactionType } from '../types';
 import { Button } from './ui/Button';
@@ -23,6 +23,7 @@ const TYPE_OPTIONS = [
 ];
 const PAYMENT_MODES = ['Cash', 'Online', 'bKash'];
 const CATEGORIES = ['Sales', 'Expense', 'Salary', 'Rent', 'General'];
+const MEMBERS = ['You', 'MD SAIFUL ISLAM', 'Md. Shoriful Islam'];
 
 export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
   const [transactions, setTransactions] = useState<Transaction[]>(MOCK_TRANSACTIONS);
@@ -34,8 +35,7 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
   
   const [filterDuration, setFilterDuration] = useState('All Time');
   const [filterType, setFilterType] = useState('All');
-  const [filterContacts, setFilterContacts] = useState<string[]>([]);
-  const [filterMembers, setFilterMembers] = useState<string[]>([]);
+  const [filterMember, setFilterMember] = useState<string | null>(null); // Single select for member based on typical filter behavior
   const [filterModes, setFilterModes] = useState<string[]>([]);
   const [filterCategories, setFilterCategories] = useState<string[]>([]);
   
@@ -68,7 +68,15 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
     setIsEntryDrawerOpen(false);
   };
 
-  // Helper for filter lists
+  const toggleMultiSelect = (item: string, currentList: string[], setter: (list: string[]) => void) => {
+    if (currentList.includes(item)) {
+      setter(currentList.filter(i => i !== item));
+    } else {
+      setter([...currentList, item]);
+    }
+  };
+
+  // Helper Components for Filter UI
   const FilterFooter = ({ onClear, onDone }: { onClear: () => void, onDone: () => void }) => (
     <div className="flex items-center justify-between p-2 border-t border-gray-100 bg-gray-50">
       <button onClick={onClear} className="px-3 py-1 text-xs font-medium text-gray-500 hover:text-gray-700">Clear</button>
@@ -86,10 +94,30 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
     </div>
   );
 
-  // Derived stats
-  const totalCashIn = transactions.reduce((sum, t) => sum + (t.category === 'Sales' || t.details.includes('In') || t.amount > 0 ? t.amount : 0), 0); // Simplified logic
-  const totalCashOut = transactions.reduce((sum, t) => sum + (t.category === 'Expense' || t.details.includes('Out') || t.amount < 0 ? Math.abs(t.amount) : 0), 0);
-  
+  const RadioItem = ({ label, checked, onChange }: { label: string, checked: boolean, onChange: () => void }) => (
+    <label className={`flex items-center w-full px-4 py-2 cursor-pointer hover:bg-gray-50 ${checked ? 'bg-blue-50' : ''}`}>
+      <div className={`flex items-center justify-center w-4 h-4 rounded-full border mr-3 flex-shrink-0 ${checked ? 'border-blue-600' : 'border-gray-400'}`}>
+          {checked && <div className="w-2 h-2 bg-blue-600 rounded-full" />}
+      </div>
+      <span className={`text-sm ${checked ? 'text-blue-600 font-medium' : 'text-gray-700'}`}>
+        {label}
+      </span>
+      <input type="radio" className="hidden" checked={checked} onChange={onChange} />
+    </label>
+  );
+
+  const CheckboxItem = ({ label, checked, onChange }: { label: string, checked: boolean, onChange: () => void }) => (
+    <label className={`flex items-center w-full px-4 py-2 cursor-pointer hover:bg-gray-50 ${checked ? 'bg-blue-50' : ''}`}>
+      <div className={`flex items-center justify-center w-4 h-4 rounded border mr-3 flex-shrink-0 ${checked ? 'bg-blue-600 border-blue-600' : 'border-gray-400 bg-white'}`}>
+          {checked && <Check className="w-3 h-3 text-white" />}
+      </div>
+      <span className={`text-sm ${checked ? 'text-blue-600 font-medium' : 'text-gray-700'}`}>
+        {label}
+      </span>
+      <input type="checkbox" className="hidden" checked={checked} onChange={onChange} />
+    </label>
+  );
+
   const formatCurrency = (val: number) => Math.abs(val).toLocaleString();
 
   return (
@@ -122,30 +150,30 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
         </div>
       </div>
 
-      {/* Filters Section */}
-      <div className="bg-white px-4 lg:px-6 py-4 border-b border-gray-200 space-y-4">
+      {/* Filters & Actions Section */}
+      <div className="bg-white px-4 lg:px-6 py-4 border-b border-gray-200">
+        
         {/* Filter Row */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 mb-4">
           {/* Duration Filter */}
           <FilterDropdown 
             label={`Duration: ${filterDuration}`} 
             isOpen={openFilter === 'duration'} 
             onToggle={() => toggleFilter('duration')}
             onClose={() => setOpenFilter(null)}
-            width="w-48"
+            width="w-56"
           >
-            <div className="py-1">
+            <div className="py-2">
               {DURATION_OPTIONS.map(opt => (
-                <button 
+                <RadioItem 
                   key={opt}
-                  onClick={() => { setFilterDuration(opt); setOpenFilter(null); }}
-                  className={`w-full text-left px-4 py-2 text-xs hover:bg-gray-50 flex items-center justify-between ${filterDuration === opt ? 'text-blue-600 bg-blue-50' : 'text-gray-700'}`}
-                >
-                  {opt}
-                  {filterDuration === opt && <div className="w-2 h-2 rounded-full bg-blue-600" />}
-                </button>
+                  label={opt}
+                  checked={filterDuration === opt}
+                  onChange={() => { setFilterDuration(opt); setOpenFilter(null); }}
+                />
               ))}
             </div>
+            <FilterFooter onClear={() => setFilterDuration('All Time')} onDone={() => setOpenFilter(null)} />
           </FilterDropdown>
 
           {/* Types Filter */}
@@ -155,20 +183,16 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
             isOpen={openFilter === 'types'} 
             onToggle={() => toggleFilter('types')}
             onClose={() => setOpenFilter(null)}
-            width="w-40"
+            width="w-48"
           >
-            <div className="p-2 space-y-1">
+            <div className="py-2">
               {TYPE_OPTIONS.map(opt => (
-                <label key={opt.id} className="flex items-center space-x-2 px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
-                  <input 
-                    type="radio" 
-                    name="type" 
-                    checked={filterType === opt.label}
-                    onChange={() => setFilterType(opt.label)}
-                    className="text-blue-600 focus:ring-blue-500 h-4 w-4 border-gray-300" 
-                  />
-                  <span className="text-sm text-gray-700">{opt.label}</span>
-                </label>
+                <RadioItem 
+                  key={opt.id}
+                  label={opt.label}
+                  checked={filterType === opt.label}
+                  onChange={() => setFilterType(opt.label)}
+                />
               ))}
             </div>
             <FilterFooter onClear={() => setFilterType('All')} onDone={() => setOpenFilter(null)} />
@@ -176,7 +200,7 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
 
           {/* Contacts Filter */}
           <FilterDropdown 
-            label={`Contacts: ${filterContacts.length ? filterContacts.length : 'All'}`} 
+            label={`Contacts: All`} 
             isOpen={openFilter === 'contacts'} 
             onToggle={() => toggleFilter('contacts')}
             onClose={() => setOpenFilter(null)}
@@ -190,21 +214,24 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
 
           {/* Members Filter */}
           <FilterDropdown 
-            label={`Members: ${filterMembers.length ? filterMembers.length : 'All'}`} 
+            label={`Members: ${filterMember ? filterMember : 'All'}`} 
             isOpen={openFilter === 'members'} 
             onToggle={() => toggleFilter('members')}
             onClose={() => setOpenFilter(null)}
+            width="w-64"
           >
             <FilterSearch placeholder="Search Members" />
-            <div className="max-h-48 overflow-y-auto p-2">
-              {['You', 'MD SAIFUL ISLAM', 'Md. Shoriful Islam'].map(member => (
-                <label key={member} className="flex items-center space-x-2 px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
-                   <input type="checkbox" className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4 border-gray-300" />
-                   <span className="text-sm text-gray-700">{member}</span>
-                </label>
+            <div className="max-h-56 overflow-y-auto py-2">
+              {MEMBERS.map(member => (
+                <RadioItem 
+                  key={member}
+                  label={member}
+                  checked={filterMember === member}
+                  onChange={() => setFilterMember(member)}
+                />
               ))}
             </div>
-            <FilterFooter onClear={() => {}} onDone={() => setOpenFilter(null)} />
+            <FilterFooter onClear={() => setFilterMember(null)} onDone={() => setOpenFilter(null)} />
           </FilterDropdown>
 
            {/* Payment Modes Filter */}
@@ -213,17 +240,20 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
             isOpen={openFilter === 'modes'} 
             onToggle={() => toggleFilter('modes')}
             onClose={() => setOpenFilter(null)}
+            width="w-64"
           >
             <FilterSearch placeholder="Search Payment Modes..." />
-            <div className="max-h-48 overflow-y-auto p-2">
+            <div className="max-h-56 overflow-y-auto py-2">
               {PAYMENT_MODES.map(mode => (
-                <label key={mode} className="flex items-center space-x-2 px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
-                   <input type="checkbox" className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4 border-gray-300" />
-                   <span className="text-sm text-gray-700">{mode}</span>
-                </label>
+                <CheckboxItem 
+                  key={mode}
+                  label={mode}
+                  checked={filterModes.includes(mode)}
+                  onChange={() => toggleMultiSelect(mode, filterModes, setFilterModes)}
+                />
               ))}
             </div>
-            <FilterFooter onClear={() => {}} onDone={() => setOpenFilter(null)} />
+            <FilterFooter onClear={() => setFilterModes([])} onDone={() => setOpenFilter(null)} />
           </FilterDropdown>
 
            {/* Categories Filter */}
@@ -232,30 +262,32 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
             isOpen={openFilter === 'categories'} 
             onToggle={() => toggleFilter('categories')}
             onClose={() => setOpenFilter(null)}
+            width="w-64"
           >
             <FilterSearch placeholder="Search Categories..." />
-            <div className="max-h-48 overflow-y-auto p-2">
+            <div className="max-h-56 overflow-y-auto py-2">
               {CATEGORIES.map(cat => (
-                <label key={cat} className="flex items-center space-x-2 px-2 py-1.5 hover:bg-gray-50 rounded cursor-pointer">
-                   <input type="checkbox" className="rounded text-blue-600 focus:ring-blue-500 h-4 w-4 border-gray-300" />
-                   <span className="text-sm text-gray-700">{cat}</span>
-                </label>
+                <CheckboxItem 
+                  key={cat}
+                  label={cat}
+                  checked={filterCategories.includes(cat)}
+                  onChange={() => toggleMultiSelect(cat, filterCategories, setFilterCategories)}
+                />
               ))}
             </div>
-            <FilterFooter onClear={() => {}} onDone={() => setOpenFilter(null)} />
+            <FilterFooter onClear={() => setFilterCategories([])} onDone={() => setOpenFilter(null)} />
           </FilterDropdown>
-
         </div>
 
         {/* Search & Actions Row */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="relative w-full">
+          <div className="relative flex-1 w-full">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search className="h-4 w-4 text-gray-400" />
             </div>
             <input 
               type="text" 
-              className="bg-white border border-gray-300 text-gray-900 text-sm rounded focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5 shadow-sm" 
+              className="bg-white border border-gray-300 text-gray-900 text-sm rounded focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 p-2.5 shadow-sm h-[40px]" 
               placeholder="Search by remark or amount..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -265,20 +297,22 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
           <div className="flex items-center gap-3 w-full md:w-auto">
              <button 
               onClick={() => handleOpenDrawer(TransactionType.CASH_IN)}
-              className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-[#059669] text-white px-6 py-2.5 rounded font-bold text-sm hover:bg-[#047857] transition-colors shadow-sm whitespace-nowrap"
+              className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-[#059669] text-white px-6 py-2.5 rounded font-bold text-sm hover:bg-[#047857] transition-colors shadow-sm whitespace-nowrap h-[40px]"
              >
                <Plus className="w-4 h-4" /> Cash In
              </button>
              <button 
                onClick={() => handleOpenDrawer(TransactionType.CASH_OUT)}
-               className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-[#dc2626] text-white px-6 py-2.5 rounded font-bold text-sm hover:bg-[#b91c1c] transition-colors shadow-sm whitespace-nowrap"
+               className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-[#dc2626] text-white px-6 py-2.5 rounded font-bold text-sm hover:bg-[#b91c1c] transition-colors shadow-sm whitespace-nowrap h-[40px]"
              >
                <Minus className="w-4 h-4" /> Cash Out
              </button>
           </div>
         </div>
+      </div>
 
-        {/* Summary Cards */}
+      {/* Summary Cards */}
+      <div className="px-4 lg:px-6 py-4">
         <div className="grid grid-cols-1 md:grid-cols-3 border border-gray-200 rounded bg-white overflow-hidden shadow-sm">
            <div className="flex items-center gap-4 p-4 border-r border-gray-100 last:border-0 relative overflow-hidden group">
              <div className="p-2 bg-emerald-50 rounded-full text-[#059669]">
@@ -315,7 +349,7 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
       </div>
 
       {/* Transaction Table */}
-      <div className="flex-1 overflow-auto bg-gray-50 px-4 lg:px-6 py-4">
+      <div className="flex-1 overflow-auto bg-gray-50 px-4 lg:px-6 pb-4">
         <div className="bg-white rounded border border-gray-200 shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left text-gray-500">
@@ -334,7 +368,7 @@ export const BookDetails: React.FC<BookDetailsProps> = ({ book, onBack }) => {
               </thead>
               <tbody>
                 {transactions.map((tx) => {
-                  const isCashOut = tx.amount > 0 && tx.category !== 'Sales'; // Using simplified logic to match mock data structure
+                  const isCashOut = tx.amount > 0 && tx.category !== 'Sales'; 
                   const amountColor = tx.amount > 0 ? 'text-[#dc2626]' : 'text-[#059669]'; 
                   
                   return (
