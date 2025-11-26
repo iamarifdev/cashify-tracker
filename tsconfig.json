@@ -47,7 +47,7 @@
         "./src/services/*"
       ]
     },
-    "allowImportingTsExtensions": true,
+    "allowImportingTsExtensions": false,
     "noEmit": true
   }
 }

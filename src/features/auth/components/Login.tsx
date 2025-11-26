@@ -1,28 +1,66 @@
-import React, { useState } from 'react';
-import { User } from '@/shared/components/ui/../types';
+import React from 'react';
+import { useAuth } from '@/features/auth';
 
-interface LoginProps {
-  onLogin: (user: User) => void;
-}
 
-export const Login: React.FC<LoginProps> = ({ onLogin }) => {
-  const [loading, setLoading] = useState(false);
+export const Login: React.FC = () => {
+  const {
+    login,
+    loading,
+    error,
+    isAuthenticated,
+    buildGoogleAuthUrl,
+    handleOAuthCallback,
+    generateNonce,
+    clearError
+  } = useAuth();
 
-  const handleGoogleLogin = () => {
-    setLoading(true);
-    // Simulating Google Auth Delay
-    setTimeout(() => {
-      const mockUser: User = {
-        id: '12345',
-        name: 'Ariful Islam',
-        email: 'ariful@example.com',
-        photoUrl: 'https://ui-avatars.com/api/?name=Ariful+Islam&background=0D8ABC&color=fff'
-      };
-      localStorage.setItem('cashify_token', 'mock_token_123');
-      localStorage.setItem('cashify_user', JSON.stringify(mockUser));
-      setLoading(false);
-      onLogin(mockUser);
-    }, 1500);
+  const [authError, setAuthError] = React.useState<string | undefined>();
+
+  // Handle OAuth callback on component mount (matching Angular implementation)
+  React.useEffect(() => {
+    const hash = globalThis.location.hash.startsWith('#') 
+      ? globalThis.location.hash.substring(1) 
+      : '';
+      
+    if (hash) {
+      const params = new URLSearchParams(hash);
+      const idToken = params.get('id_token');
+      const errorParam = params.get('error');
+      const errorDescription = params.get('error_description');
+      
+      if (idToken) {
+        // Store the ID token and redirect to clear hash
+        globalThis.history.replaceState({}, document.title, globalThis.location.pathname);
+        
+        // Create user data from token (simplified version)
+        const payload = JSON.parse(atob(idToken.split('.')[1]));
+        const userData = {
+          id: payload.sub,
+          name: payload.name,
+          email: payload.email,
+          photoUrl: payload.picture,
+          emailVerified: payload.email_verified
+        };
+        
+        login(userData, idToken);
+      } else if (errorParam) {
+        setAuthError(errorDescription ?? errorParam);
+        globalThis.history.replaceState({}, document.title, globalThis.location.pathname);
+      }
+    }
+  }, [login]);
+
+  const handleGoogleSignIn = () => {
+    clearError();
+    setAuthError(undefined);
+    
+    const nonce = generateNonce();
+    sessionStorage.setItem('google_nonce', nonce);
+    
+    const authUrl = buildGoogleAuthUrl(nonce);
+    
+    // Use redirect-based authentication (matching Angular)
+    globalThis.location.href = authUrl;
   };
 
   return (
@@ -125,14 +163,19 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
              
              <div className="space-y-4">
                <button 
-                 onClick={handleGoogleLogin}
+                 onClick={handleGoogleSignIn}
                  disabled={loading}
                  className="w-full flex items-center justify-center px-4 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-700 font-medium hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-blue-100"
                >
                  {loading ? (
                     <div className="w-5 h-5 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin mr-3"></div>
                  ) : (
-                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="h-5 w-5 mr-3" alt="Google" />
+                    <svg viewBox="0 0 533.5 544.3" className="h-5 w-5 mr-3" aria-hidden="true">
+                      <path fill="#4285f4" d="M533.5 278.4c0-17.4-1.5-34.1-4.3-50.2H272v95h146.9c-6.3 34-25.3 62.8-54 82v68h87.2c51-46.9 81.4-116.1 81.4-194.8z" />
+                      <path fill="#34a853" d="M272 544.3c73.4 0 135-24.2 180-65.7l-87.2-68c-24.2 16.2-55.2 25.8-92.8 25.8-71 0-131.2-47.9-152.8-112.5h-90v70.6c45.7 90.6 140 149.8 242.8 149.8z" />
+                      <path fill="#fbbc04" d="M119.2 323.9c-10.4-30-10.4-62.4 0-92.4v-70.6h-90c-36.7 71.3-36.7 155.7 0 227z" />
+                      <path fill="#ea4335" d="M272 106.1c38.8-.6 75.9 13.8 104.3 40.5l78-78C409.7 24.7 342.7-.6 272 0 169.2 0 74.9 59.2 29.2 149.9l90 70.6C140.8 154 201 106.1 272 106.1z" />
+                    </svg>
                  )}
                  Continue With Google
                </button>
@@ -164,6 +207,12 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 Other Ways To Login
               </button>
            </div>
+
+           {(error || authError) && (
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-600 text-sm">{error || authError}</p>
+              </div>
+           )}
         </div>
       </div>
     </div>
