@@ -1,12 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { Sidebar } from './components/layout/Sidebar';
-import { Login } from './pages/Login';
-import { Dashboard } from './pages/Dashboard';
-import { BookDetails } from './pages/BookDetails';
-import { TopBar } from './components/layout/TopBar';
-import { User, Book, ViewState, Business } from './types';
-import { MOCK_BUSINESSES } from './services/mockData';
+import { Sidebar, TopBar } from '@/shared/components/layout';
+import { Login } from '@/features/auth';
+import { Dashboard } from '@/features/cashbook';
+import { BookDetails } from '@/features/transactions';
+import { User, Book, ViewState, Business } from '@/types';
+import { MOCK_BUSINESSES } from '@/services/mockData';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -108,16 +107,16 @@ const App: React.FC = () => {
 
         <div className="flex-1 overflow-hidden relative">
           {viewState === 'DASHBOARD' && (
-            <Dashboard 
-              onBookSelect={handleBookSelect} 
+            <Dashboard
+              onBookSelect={handleBookSelect}
               currentBusiness={currentBusiness}
             />
           )}
 
           {viewState === 'BOOK_DETAILS' && selectedBook && (
-            <BookDetails 
-              book={selectedBook} 
-              onBack={handleBackToDashboard} 
+            <BookDetails
+              book={selectedBook}
+              onBack={handleBackToDashboard}
             />
           )}
         </div>

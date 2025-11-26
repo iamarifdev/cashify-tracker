@@ -20,7 +20,31 @@
     "jsx": "react-jsx",
     "paths": {
       "@/*": [
-        "./*"
+        "./src/*"
+      ],
+      "@/features/*": [
+        "./src/features/*"
+      ],
+      "@/shared/*": [
+        "./src/shared/*"
+      ],
+      "@/pages/*": [
+        "./src/pages/*"
+      ],
+      "@/types/*": [
+        "./src/types/*"
+      ],
+      "@/utils/*": [
+        "./src/utils/*"
+      ],
+      "@/hooks/*": [
+        "./src/hooks/*"
+      ],
+      "@/assets/*": [
+        "./src/assets/*"
+      ],
+      "@/services/*": [
+        "./src/services/*"
       ]
     },
     "allowImportingTsExtensions": true,
