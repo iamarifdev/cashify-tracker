@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "preview:prod": "vite preview --port 4173 --host",
     "deploy": "firebase deploy"
   },
   "dependencies": {
