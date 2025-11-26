@@ -5,7 +5,7 @@ import {
   Wrench, Gem, Activity, ShoppingBasket, Truck, LayoutGrid, Check,
   Store, Factory, Briefcase, ChevronDown, ChevronUp
 } from 'lucide-react';
-import { Button } from './ui/Button';
+import { Button } from '../ui/Button';
 
 interface CreateBusinessModalProps {
   isOpen: boolean;

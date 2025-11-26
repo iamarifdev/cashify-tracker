@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
-import { Sidebar } from './components/Sidebar';
-import { Login } from './components/Login';
-import { Dashboard } from './components/Dashboard';
-import { BookDetails } from './components/BookDetails';
-import { TopBar } from './components/dashboard/TopBar';
+import { Sidebar } from './components/layout/Sidebar';
+import { Login } from './pages/Login';
+import { Dashboard } from './pages/Dashboard';
+import { BookDetails } from './pages/BookDetails';
+import { TopBar } from './components/layout/TopBar';
 import { User, Book, ViewState, Business } from './types';
 import { MOCK_BUSINESSES } from './services/mockData';
 

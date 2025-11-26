@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
 import { X, FileSpreadsheet } from 'lucide-react';
-import { Button } from './ui/Button';
-import { Contact } from '../types';
+import { Button } from '../ui/Button';
+import { Contact } from '../../types';
 
 interface AddContactModalProps {
   isOpen: boolean;

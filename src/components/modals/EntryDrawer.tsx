@@ -1,12 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, Clock, Paperclip, Settings } from 'lucide-react';
-import { Transaction, TransactionType, Contact } from '../types';
-import { Button } from './ui/Button';
-import { SearchableDropdown } from './ui/SearchableDropdown';
-import { AddContactModal } from './AddContactModal';
-import { AddItemModal } from './AddItemModal';
-import { MOCK_CONTACTS } from '../services/mockData';
+import { Transaction, TransactionType, Contact } from '../../types';
+import { Button } from '../ui/Button';
+import { SearchableDropdown } from '../ui/SearchableDropdown';
+import { AddContactModal } from '../modals/AddContactModal';
+import { AddItemModal } from '../modals/AddItemModal';
+import { MOCK_CONTACTS } from '../../services/mockData';
 
 interface EntryDrawerProps {
   isOpen: boolean;

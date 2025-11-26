@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { Search, Book, Pencil, Copy, UserPlus, CornerUpRight } from 'lucide-react';
 import { Book as BookType, Business } from '../types';
 import { MOCK_BOOKS } from '../services/mockData';
-import { RoleBanner } from './dashboard/RoleBanner';
-import { PromoSidebar } from './dashboard/PromoSidebar';
-import { FilterDropdown } from './ui/FilterDropdown';
+import { RoleBanner } from '../components/layout/RoleBanner';
+import { PromoSidebar } from '../components/layout/PromoSidebar';
+import { FilterDropdown } from '../components/ui/FilterDropdown';
 
 interface DashboardProps {
   onBookSelect: (book: BookType) => void;

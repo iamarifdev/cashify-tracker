@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
-import { Button } from './ui/Button';
+import { Button } from '../ui/Button';
 
 interface AddItemModalProps {
   isOpen: boolean;

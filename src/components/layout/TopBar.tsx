@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { LayoutGrid, ChevronDown, Plus, LogOut, Download, Menu } from 'lucide-react';
 import { Business, User } from '../../types';
-import { CreateBusinessModal } from '../CreateBusinessModal';
+import { CreateBusinessModal } from '../modals/CreateBusinessModal';
 
 interface TopBarProps {
   user: User;

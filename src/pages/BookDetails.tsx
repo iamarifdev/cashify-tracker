@@ -5,12 +5,12 @@ import {
   ChevronLeft, ChevronRight, Check, FileText, Pencil, Trash2, X
 } from 'lucide-react';
 import { Book, Transaction, TransactionType } from '../types';
-import { Button } from './ui/Button';
-import { FilterDropdown } from './ui/FilterDropdown';
+import { Button } from '../components/ui/Button';
+import { FilterDropdown } from '../components/ui/FilterDropdown';
 import { MOCK_TRANSACTIONS } from '../services/mockData';
-import { EntryDrawer } from './EntryDrawer';
-import { EntryDetailsDrawer } from './EntryDetailsDrawer';
-import { DeleteEntryModal } from './DeleteEntryModal';
+import { EntryDrawer } from '../components/modals/EntryDrawer';
+import { EntryDetailsDrawer } from '../components/modals/EntryDetailsDrawer';
+import { DeleteEntryModal } from '../components/modals/DeleteEntryModal';
 
 interface BookDetailsProps {
   book: Book;

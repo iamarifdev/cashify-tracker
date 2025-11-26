@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { X, AlertTriangle, Trash2 } from 'lucide-react';
-import { Transaction, TransactionType } from '../types';
+import { Transaction, TransactionType } from '../../types';
 
 interface DeleteEntryModalProps {
   isOpen: boolean;

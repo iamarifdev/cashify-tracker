@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { X, Cloud, Trash2, Edit2, ChevronDown, Plus, Pencil, CheckCircle2 } from 'lucide-react';
-import { Transaction, TransactionType } from '../types';
+import { Transaction, TransactionType } from '../../types';
 
 interface EntryDetailsDrawerProps {
   transaction: Transaction | null;
