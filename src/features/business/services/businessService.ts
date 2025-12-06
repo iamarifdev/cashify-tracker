@@ -17,6 +17,17 @@ export const businessService = {
       role: 'Owner'
     };
 
+    // Store in localStorage for persistence
+    const userId = localStorage.getItem('cashify_user');
+    if (userId) {
+      const user = JSON.parse(userId);
+      const businessesKey = `businesses_${user.id}`;
+      const existingBusinesses = localStorage.getItem(businessesKey);
+      const businesses = existingBusinesses ? JSON.parse(existingBusinesses) : [];
+      businesses.push(newBusiness);
+      localStorage.setItem(businessesKey, JSON.stringify(businesses));
+    }
+
     return newBusiness;
   },
 

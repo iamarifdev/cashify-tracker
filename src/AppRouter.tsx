@@ -9,6 +9,7 @@ import {
 import { Login, useAuth } from "@/features/auth";
 import { Dashboard } from "@/features/cashbook";
 import { BookDetails } from "@/features/transactions";
+import { OnboardingPage } from "@/features/onboarding";
 import { MOCK_BUSINESSES, MOCK_BOOKS } from "@/services/mockData";
 import { Sidebar, TopBar } from "@/shared/components/layout";
 import { ProtectedRoute } from "@/shared/router";
@@ -114,11 +115,36 @@ const BookDetailsWrapper: React.FC = () => {
   return <BookDetails book={book} onBack={handleBack} />;
 };
 
+// Onboarding wrapper component
+const OnboardingWrapper: React.FC = () => {
+  const { user } = useAuth();
+
+  const handleOnboardingComplete = (businessName: string) => {
+    // Navigate to dashboard after onboarding is complete
+    globalThis.location.href = "/";
+  };
+
+  return (
+    <OnboardingPage
+      onComplete={handleOnboardingComplete}
+      userName={user?.name}
+    />
+  );
+};
+
 // Main App Router component using createBrowserRouter
 const router = createBrowserRouter([
   {
     path: "/login",
     element: <Login />,
+  },
+  {
+    path: "/onboarding",
+    element: (
+      <ProtectedRoute>
+        <OnboardingWrapper />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/",

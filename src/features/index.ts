@@ -4,3 +4,4 @@ export * from './business';
 export * from './cashbook';
 export * from './transactions';
 export * from './contacts';
+export * from './onboarding';
