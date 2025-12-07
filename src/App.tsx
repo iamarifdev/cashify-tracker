@@ -1,11 +1,12 @@
 import React from 'react';
-import { AppRouter } from './AppRouter';
+import { RouterProvider } from '@tanstack/react-router';
+import { router } from './router';
 import { AuthProvider } from '@/features/auth';
 
 const App: React.FC = () => {
   return (
     <AuthProvider>
-      <AppRouter />
+      <RouterProvider router={router} />
     </AuthProvider>
   );
 };
