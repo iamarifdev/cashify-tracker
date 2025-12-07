@@ -1,4 +1,4 @@
-import { GoogleUser, Business } from '@/types'
+import { Business, GoogleUser } from '@/types'
 
 interface StorageKeys {
   AUTH_TOKEN: 'cashify_token'
@@ -22,7 +22,7 @@ const STORAGE_KEYS: StorageKeys = {
  * Safe storage utilities with type guards and error handling
  */
 export class SecureStorage {
-  private static isClient = typeof window !== 'undefined'
+  private static readonly isClient = globalThis.window !== undefined
 
   /**
    * Safely parse JSON with error handling
