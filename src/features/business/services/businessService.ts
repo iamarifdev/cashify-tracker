@@ -8,6 +8,16 @@ export const businessService = {
     return [];
   },
 
+  async getBusinessById(id: string): Promise<Business> {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    // In real app, this would fetch from API
+    return {
+      id,
+      name: `Business ${id}`,
+      role: 'Owner'
+    };
+  },
+
   async createBusiness(businessData: { name: string; category: string; type: string }): Promise<Business> {
     await new Promise(resolve => setTimeout(resolve, 1000));
 

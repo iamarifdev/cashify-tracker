@@ -1,5 +1,8 @@
 import { Business } from '@/types';
 
+// Re-export Business for use within the feature
+export type { Business };
+
 export interface CreateBusinessData {
   name: string;
   category: string;
