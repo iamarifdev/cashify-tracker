@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpen, Settings, LayoutGrid, HelpCircle, ChevronDown, ChevronRight, Book, Users } from 'lucide-react';
+import { BookOpen, Settings, LayoutGrid, HelpCircle, ChevronDown, Book, Users } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
@@ -18,15 +18,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, isOpen
   ];
 
   return (
-    <>
-      {/* Mobile Overlay */}
-      <div 
-        className={`fixed inset-0 z-20 bg-gray-600 bg-opacity-50 transition-opacity lg:hidden ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-        onClick={() => setIsOpen(false)}
-      />
-
-      {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-30 w-64 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col`}>
+    <div className={`w-64 h-full bg-white border-r border-gray-200 flex flex-col lg:relative`}>
         {/* Header */}
         <div className="flex items-center h-16 px-6 border-b border-gray-100">
           <div className="flex items-center gap-2 text-blue-600">
@@ -88,6 +80,5 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange, isOpen
             <p className="text-xs text-gray-400">© CashBook • Version 3.25.1</p>
         </div>
       </div>
-    </>
   );
 };

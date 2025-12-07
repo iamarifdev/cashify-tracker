@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './src/App';
+import { RouterProvider } from '@tanstack/react-router';
+import { router } from './src/router';
 import { AuthProvider } from './src/features/auth';
 
 const rootElement = document.getElementById('root');
@@ -12,7 +13,7 @@ const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
     <AuthProvider>
-      <App />
+      <RouterProvider router={router} />
     </AuthProvider>
   </React.StrictMode>
 );
