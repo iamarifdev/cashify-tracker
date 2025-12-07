@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, MessageSquare, ChevronDown, Smartphone } from 'lucide-react';
+import { Plus, MessageSquare, ChevronDown } from 'lucide-react';
 import { Button } from '@/shared/components/ui/Button';
 
 export const PromoSidebar: React.FC = () => {

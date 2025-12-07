@@ -30,7 +30,7 @@ export const EntryDetailsDrawer: React.FC<EntryDetailsDrawerProps> = ({
   });
 
   // Mocking update time for the visual match
-  const updatedTime = formattedDate + ", " + transaction.time;
+  const updatedTime = `${formattedDate  }, ${  transaction.time}`;
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">

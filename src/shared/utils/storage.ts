@@ -1,4 +1,4 @@
-import { GoogleUser, User, Business, Book } from '@/types'
+import { GoogleUser, Business } from '@/types'
 
 interface StorageKeys {
   AUTH_TOKEN: 'cashify_token'

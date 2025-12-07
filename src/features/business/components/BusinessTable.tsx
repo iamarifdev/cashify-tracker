@@ -8,7 +8,6 @@ import {
 } from '@tanstack/react-table';
 import { useState, useMemo } from 'react';
 import { Business } from '@/types';
-import { format } from 'date-fns';
 import { useBusinessStats } from '../api/business.query';
 
 interface BusinessTableProps {

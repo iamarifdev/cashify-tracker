@@ -1,8 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, Clock, Paperclip, Settings } from 'lucide-react';
+import { X, Calendar, Clock, Paperclip } from 'lucide-react';
 import { Transaction, TransactionType, Contact } from '@/types';
-import { Button } from '@/shared/components/ui/Button';
 import { SearchableDropdown } from '@/shared/components/ui/SearchableDropdown';
 import { AddContactModal } from '@/features/contacts/components/AddContactModal';
 import { AddItemModal } from '@/features/transactions/components/AddItemModal';
@@ -82,7 +81,7 @@ export const EntryDrawer: React.FC<EntryDrawerProps> = ({ isOpen, onClose, type,
           remarks,
           category: category || 'General',
           paymentMode: paymentMode || 'Cash',
-          contactName: contactName,
+          contactName,
           type: activeType,
           date: initialData?.date,
           time: initialData?.time 

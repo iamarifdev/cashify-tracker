@@ -10,13 +10,13 @@ export const authService = {
     const user: User = {
       id: 'user_123',
       name: 'Ariful Islam',
-      email: email,
+      email,
       photoUrl: 'https://ui-avatars.com/api/?name=Ariful+Islam&background=0D8ABC&color=fff'
     };
 
     return {
       user,
-      token: 'mock_jwt_token_' + Date.now()
+      token: `mock_jwt_token_${  Date.now()}`
     };
   },
 
@@ -32,7 +32,7 @@ export const authService = {
 
     return {
       user,
-      token: 'google_token_' + Date.now()
+      token: `google_token_${  Date.now()}`
     };
   },
 
@@ -43,7 +43,7 @@ export const authService = {
 
   async refreshToken(refreshToken: string): Promise<string> {
     await new Promise(resolve => setTimeout(resolve, 500));
-    return 'new_jwt_token_' + Date.now();
+    return `new_jwt_token_${  Date.now()}`;
   },
 
   async validateToken(token: string): Promise<boolean> {

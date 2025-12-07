@@ -1,11 +1,6 @@
 import { storage } from '@/shared/utils/storage'
 import { apiClient } from '@/shared/api/fetch-client'
 
-interface TokenInfo {
-  accessToken: string
-  refreshToken?: string
-  expiresAt?: number
-}
 
 /**
  * Token manager for handling secure token operations

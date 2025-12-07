@@ -1,8 +1,6 @@
 import { useCallback, useMemo } from 'react'
 import { useCurrentUser, useLogin, useLogout, useOAuthCallback, useGoogleOAuthUrl, useRefreshToken } from '../api/auth.query'
-import { GoogleUser } from '@/types'
 import { AuthUtils } from '../utils/auth.utils'
-import { storage } from '@/shared/utils/storage'
 
 export function useAuthQuery() {
   // Get current user with TanStack Query

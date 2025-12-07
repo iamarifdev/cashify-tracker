@@ -268,7 +268,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         array[i] = Math.floor(Math.random() * 256);
       }
     }
-    return Array.from(array, (b) => ("00" + b.toString(16)).slice(-2)).join("");
+    return Array.from(array, (b) => (`00${  b.toString(16)}`).slice(-2)).join("");
   }, []);
 
   // Build Google OAuth URL (matching Angular implementation)
@@ -308,7 +308,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           body: new URLSearchParams({
             client_id: GOOGLE_CLIENT_ID!,
             client_secret: "your_google_client_secret_here", // In production, this should come from backend
-            code: code,
+            code,
             grant_type: "authorization_code",
             redirect_uri: `${FRONTEND_URL}/login`,
           }),

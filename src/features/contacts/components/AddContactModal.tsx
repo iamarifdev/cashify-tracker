@@ -22,9 +22,9 @@ export const AddContactModal: React.FC<AddContactModalProps> = ({ isOpen, onClos
       
       const newContact: Contact = {
           id: `c_${Date.now()}`,
-          name: name,
-          mobile: mobile,
-          type: type
+          name,
+          mobile,
+          type
       };
       
       onSave(newContact);

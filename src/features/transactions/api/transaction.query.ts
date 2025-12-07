@@ -4,8 +4,7 @@ import type {
   Transaction,
   CreateTransactionData,
   UpdateTransactionData,
-  TransactionFilters,
-  TransactionStats
+  TransactionFilters
 } from '../types/transaction.types';
 
 // Query key factory for transactions
@@ -139,7 +138,7 @@ export const useDeleteTransaction = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, bookId }: { id: string; bookId: string }) =>
+    mutationFn: ({ id }: { id: string; bookId: string }) =>
       transactionService.deleteTransaction(id),
     onSuccess: (_, { id, bookId }) => {
       // Remove from cache

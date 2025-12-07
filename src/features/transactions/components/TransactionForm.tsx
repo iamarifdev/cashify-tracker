@@ -2,7 +2,7 @@ import { useForm } from '@tanstack/react-form';
 import { zodValidator } from '@tanstack/zod-form-adapter';
 import { z } from 'zod';
 import { useCreateTransaction, useUpdateTransaction } from '../api/transaction.query';
-import type { CreateTransactionData, Transaction } from '../types/transaction.types';
+import type { Transaction } from '../types/transaction.types';
 import { TransactionType } from '@/types';
 
 // Validation schema

@@ -24,7 +24,7 @@ function OnboardingRoute() {
 
 export const Route = createFileRoute('/onboarding')({
   component: OnboardingRoute,
-  beforeLoad: async ({ context }) => {
+  beforeLoad: async ({ context: _context }) => {
     // Check if user is authenticated using centralized logic
     if (!AuthUtils.isAuthenticated()) {
       throw redirect({

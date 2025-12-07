@@ -52,7 +52,7 @@ const generateTransactions = (bookId: string, count: number): Transaction[] => {
       type: isCashIn ? TransactionType.CASH_IN : TransactionType.CASH_OUT,
       date: date.toISOString(),
       time: timeString,
-      amount: amount,
+      amount,
       details: isCashIn ? 'Payment Received' : 'Material Purchase',
       category: isCashIn ? 'Sales' : 'Expense',
       paymentMode: Math.random() > 0.5 ? 'Cash' : 'bKash',
