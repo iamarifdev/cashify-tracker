@@ -188,9 +188,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     localStorage.removeItem("cashify_google_nonce"); // Clear OAuth state
 
     // Clear any in-memory Google state
-    if (globalThis.google?.accounts?.oauth2) {
+    if (typeof globalThis !== 'undefined' && (globalThis as any).google?.accounts?.oauth2) {
       try {
-        globalThis.google.accounts.oauth2.revoke("mock_jwt_token");
+        (globalThis as any).google.accounts.oauth2.revoke("mock_jwt_token");
       } catch (e) {
         // Ignore revoke errors
       }

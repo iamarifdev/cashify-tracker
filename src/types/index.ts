@@ -6,6 +6,14 @@ export interface User {
   photoUrl: string;
 }
 
+export interface GoogleUser extends User {
+  emailVerified?: boolean;
+  idToken?: string;
+  refreshToken?: string;
+  tokenExpiresAt?: number;
+  hasCompletedOnboarding?: boolean;
+}
+
 export interface Business {
   id: string;
   name: string;

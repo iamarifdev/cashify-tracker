@@ -30,28 +30,26 @@ function DashboardRoute() {
   )
 }
 
+DashboardRoute.loader = async () => {
+  // Check if user is authenticated using centralized logic
+  const { AuthUtils } = await import('@/features/auth/utils/auth.utils')
+
+  if (!AuthUtils.isAuthenticated()) {
+    throw redirect({
+      to: '/login',
+    })
+  }
+
+  // Check if user has completed onboarding
+  if (!AuthUtils.hasCompletedOnboarding()) {
+    throw redirect({
+      to: '/onboarding',
+    })
+  }
+
+  return { isAuthenticated: true }
+}
+
 export const Route = createLazyFileRoute('/dashboard')({
   component: DashboardRoute,
-  loader: async () => {
-    // Check if user is authenticated
-    const isAuthenticated = localStorage.getItem('authToken')
-    if (!isAuthenticated) {
-      throw redirect({
-        to: '/login',
-      })
-    }
-
-    // Check if user has completed onboarding
-    const userStr = localStorage.getItem('user')
-    if (userStr) {
-      const user = JSON.parse(userStr)
-      if (!user.hasCompletedOnboarding) {
-        throw redirect({
-          to: '/onboarding',
-        })
-      }
-    }
-
-    return { isAuthenticated: true }
-  },
 })

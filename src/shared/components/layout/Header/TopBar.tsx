@@ -5,7 +5,7 @@ import { Business, User } from '@/types';
 import { CreateBusinessModal } from '@/features/business';
 
 interface TopBarProps {
-  user: User;
+  user: User | null;
   currentBusiness: Business;
   businesses: Business[];
   onBusinessChange: (business: Business) => void;
@@ -141,9 +141,9 @@ export const TopBar: React.FC<TopBarProps> = ({
                   onClick={() => setProfileMenuOpen(!isProfileMenuOpen)}
                   className={`flex items-center gap-2 px-2 py-1.5 rounded transition-colors ${isProfileMenuOpen ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
                 >
-                  <span className="text-sm font-medium text-gray-700 hidden md:block">{user.name}</span>
+                  <span className="text-sm font-medium text-gray-700 hidden md:block">{user?.name || 'User'}</span>
                   <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm border border-blue-200">
-                    {user.name.charAt(0)}
+                    {user?.name?.charAt(0) || 'U'}
                   </div>
                   <ChevronDown className="w-4 h-4 text-gray-400" />
                 </button>
@@ -154,10 +154,10 @@ export const TopBar: React.FC<TopBarProps> = ({
                       <div className="p-4 border-b border-gray-100">
                           <div className="flex items-start gap-3">
                             <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-lg flex-shrink-0">
-                                {user.name.charAt(0)}
+                                {user?.name?.charAt(0) || 'U'}
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-bold text-gray-900 truncate">{user.name}</p>
+                                <p className="text-sm font-bold text-gray-900 truncate">{user?.name || 'User'}</p>
                                 <p className="text-xs text-gray-500 mb-1">+8801793574440</p>
                                 <a href="#" className="text-xs text-blue-600 font-medium hover:underline flex items-center">
                                   Your Profile <ChevronDown className="w-3 h-3 -rotate-90 ml-0.5" />
