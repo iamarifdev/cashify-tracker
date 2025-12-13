@@ -3,7 +3,8 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  photoUrl: string;
+  photoUrl?: string;
+  hasCompletedOnboarding?: boolean;
 }
 
 export interface GoogleUser extends User {

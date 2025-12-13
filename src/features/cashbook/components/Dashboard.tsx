@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { Search, Book, Pencil, Copy, UserPlus, CornerUpRight } from 'lucide-react';
-import { Book as BookType, Business } from '@/types';
-import { MOCK_BOOKS } from '@/services/mockData';
+import { Business } from '@/types';
+import type { Cashbook } from '../types/cashbook.types';
 import { RoleBanner, PromoSidebar } from '@/shared/components/layout';
 import { FilterDropdown } from '@/shared/components/ui';
+import { LoadingSpinner } from '@/shared/components/Loading/LoadingSpinner';
+import { ApiErrorDisplay } from '@/shared/components/Error/ApiError';
+import { useCashbooksManager } from '../api/cashbook.query';
 
 interface DashboardProps {
-  onBookSelect: (book: BookType) => void;
+  onBookSelect: (book: Cashbook) => void;
   currentBusiness: Business;
 }
 
@@ -23,17 +26,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBookSelect, currentBusin
   const [sortOption, setSortOption] = useState('Last Updated');
   const [isSortOpen, setIsSortOpen] = useState(false);
 
+  // Fetch cashbooks from API
+  const { cashbooks, isLoading, error, refetch } = useCashbooksManager(currentBusiness.id);
+
   // Filter & Sort logic
-  const filteredBooks = MOCK_BOOKS
-    .filter(b => b.businessId === currentBusiness.id)
+  const filteredBooks = cashbooks
     .filter(b => b.name.toLowerCase().includes(searchTerm.toLowerCase()))
     .sort((a, b) => {
       switch(sortOption) {
         case 'Name (A to Z)': return a.name.localeCompare(b.name);
-        case 'Net Balance (High to Low)': return b.netBalance - a.netBalance;
-        case 'Net Balance (Low to High)': return a.netBalance - b.netBalance;
-        case 'Last Created': return new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime();
-        default: return new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime();
+        case 'Net Balance (High to Low)': return b.currentBalance - a.currentBalance;
+        case 'Net Balance (Low to High)': return a.currentBalance - b.currentBalance;
+        case 'Last Created': return new Date(b.id).getTime() - new Date(a.id).getTime(); // Using ID as proxy for creation time
+        default: return new Date(b.id).getTime() - new Date(a.id).getTime();
       }
     });
 
@@ -41,6 +46,38 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBookSelect, currentBusin
     if (balance === 0) return 'text-gray-900';
     return balance > 0 ? 'text-[#059669]' : 'text-[#dc2626]';
   };
+
+  // Handle loading state
+  if (isLoading) {
+    return (
+      <div className="flex flex-col h-full bg-[#f9fafb]">
+        <div className="flex-1 overflow-auto p-4 lg:p-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-6">{currentBusiness.name}</h2>
+          <RoleBanner role={currentBusiness.role} />
+          <div className="flex items-center justify-center h-64">
+            <LoadingSpinner size="lg" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle error state
+  if (error) {
+    return (
+      <div className="flex flex-col h-full bg-[#f9fafb]">
+        <div className="flex-1 overflow-auto p-4 lg:p-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-6">{currentBusiness.name}</h2>
+          <RoleBanner role={currentBusiness.role} />
+          <ApiErrorDisplay
+            error={error}
+            onRetry={() => refetch()}
+            className="mt-6"
+          />
+        </div>
+      </div>
+    );
+  }
 
   const FilterFooter = ({ onClear, onDone }: { onClear: () => void, onDone: () => void }) => (
     <div className="flex items-center justify-between p-2 border-t border-gray-100 bg-gray-50">
@@ -122,15 +159,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBookSelect, currentBusin
                             <div>
                               <h3 className="font-semibold text-gray-900 text-base">{book.name}</h3>
                               <p className="text-xs text-gray-500 mt-0.5">
-                                  {book.membersCount} members • Updated {new Date(book.lastUpdated).toLocaleDateString()}
+                                  {book.membersCount} members • {book.memberRole}
                               </p>
                             </div>
                         </div>
 
                         <div className="flex items-center gap-6">
                             <div className="text-right">
-                                <p className={`font-bold text-base ${getBalanceColor(book.netBalance)}`}>
-                                {book.netBalance.toLocaleString()}
+                                <p className={`font-bold text-base ${getBalanceColor(book.currentBalance)}`}>
+                                {book.currentBalance.toLocaleString()}
                                 </p>
                             </div>
 

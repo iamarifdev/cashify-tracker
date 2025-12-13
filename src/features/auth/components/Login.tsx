@@ -4,7 +4,6 @@ import { useAuth } from '@/features/auth';
 
 export const Login: React.FC = () => {
   const {
-    login,
     loading,
     error,
     isAuthenticated,
@@ -16,39 +15,42 @@ export const Login: React.FC = () => {
 
   const [authError, setAuthError] = React.useState<string | undefined>();
 
-  // Handle OAuth callback on component mount (matching Angular implementation)
+  // Handle OAuth callback on component mount
   React.useEffect(() => {
-    const hash = globalThis.location.hash.startsWith('#') 
-      ? globalThis.location.hash.substring(1) 
+    // Check for authorization code in query params (authorization code flow)
+    const urlParams = new URLSearchParams(globalThis.location.search);
+    const code = urlParams.get('code');
+    const state = urlParams.get('state');
+    const errorParam = urlParams.get('error');
+    const errorDescription = urlParams.get('error_description');
+
+    // Also check hash for backward compatibility
+    const hash = globalThis.location.hash.startsWith('#')
+      ? globalThis.location.hash.substring(1)
       : '';
-      
-    if (hash) {
-      const params = new URLSearchParams(hash);
-      const idToken = params.get('id_token');
-      const errorParam = params.get('error');
-      const errorDescription = params.get('error_description');
-      
-      if (idToken) {
-        // Store the ID token and redirect to clear hash
-        globalThis.history.replaceState({}, document.title, globalThis.location.pathname);
-        
-        // Create user data from token (simplified version)
-        const payload = JSON.parse(atob(idToken.split('.')[1]));
-        const userData = {
-          id: payload.sub,
-          name: payload.name,
-          email: payload.email,
-          photoUrl: payload.picture,
-          emailVerified: payload.email_verified
-        };
-        
-        login(userData, idToken);
-      } else if (errorParam) {
-        setAuthError(errorDescription ?? errorParam);
-        globalThis.history.replaceState({}, document.title, globalThis.location.pathname);
-      }
+    const hashParams = new URLSearchParams(hash);
+    const hashCode = hashParams.get('code');
+    const hashState = hashParams.get('state');
+
+    // Use whichever has the code
+    const authCode = code || hashCode;
+    const authState = state || hashState;
+
+    if (authCode) {
+      // Clear the URL parameters
+      globalThis.history.replaceState({}, document.title, globalThis.location.pathname);
+
+      // Exchange authorization code for tokens via backend
+      handleOAuthCallback(authCode, authState || '')
+        .catch(error => {
+          console.error('Token exchange failed:', error);
+          setAuthError('Authentication failed. Please try again.');
+        });
+    } else if (errorParam) {
+      setAuthError(errorDescription ?? errorParam);
+      globalThis.history.replaceState({}, document.title, globalThis.location.pathname);
     }
-  }, [login]);
+  }, []);
 
   const handleGoogleSignIn = () => {
     clearError();

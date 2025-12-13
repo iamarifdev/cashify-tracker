@@ -18,8 +18,8 @@ export class AuthUtils {
 
     const params = new URLSearchParams({
       client_id: GOOGLE_CLIENT_ID,
-      redirect_uri: `${FRONTEND_URL}/login/callback`,
-      response_type: 'code',
+      redirect_uri: `${FRONTEND_URL}/login`,
+      response_type: 'code', // Use authorization code flow
       scope: 'openid email profile',
       access_type: 'offline',
       prompt: 'consent',

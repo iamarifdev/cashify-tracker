@@ -1,6 +1,8 @@
 import { createRootRoute, Outlet } from '@tanstack/react-router'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { ErrorBoundary } from '@/shared/components/ErrorBoundary/ErrorBoundary'
+import { SuspenseWrapper } from '@/shared/components/Loading/SuspenseWrapper'
 import { Suspense } from 'react'
 
 // Create a client

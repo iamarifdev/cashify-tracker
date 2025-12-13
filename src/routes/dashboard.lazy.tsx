@@ -31,6 +31,12 @@ function DashboardRoute() {
 }
 
 DashboardRoute.loader = async () => {
+  // Skip authentication in development mode if DEBUG flag is set
+  if (import.meta.env.VITE_DEBUG === 'true') {
+    console.log('Development mode: Skipping authentication check')
+    return { isAuthenticated: true }
+  }
+
   // Check if user is authenticated using centralized logic
   const { AuthUtils } = await import('@/features/auth/utils/auth.utils')
 

@@ -87,7 +87,14 @@ class ApiClient {
    * Add auth token to request headers
    */
   private addAuthHeader(options: ApiRequestOptions = {}): ApiRequestOptions {
-    const token = storage.getAuthToken()
+    // In development mode, use dev token if available
+    let token = storage.getAuthToken()
+
+    if (!token && import.meta.env.VITE_DEV_JWT_TOKEN) {
+      token = import.meta.env.VITE_DEV_JWT_TOKEN
+      console.warn('Using development JWT token')
+    }
+
     const headers = new Headers(options.headers)
 
     if (token) {

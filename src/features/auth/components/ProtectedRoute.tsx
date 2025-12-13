@@ -9,6 +9,12 @@ interface ProtectedRouteProps {
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { isAuthenticated, loading, initializing } = useAuth()
 
+  // In debug mode, bypass authentication
+  if (import.meta.env.VITE_DEBUG === 'true') {
+    console.log('Development mode: Bypassing ProtectedRoute authentication')
+    return <>{children}</>
+  }
+
   // Show loading indicator while initializing or checking auth
   if (loading || initializing) {
     return (
