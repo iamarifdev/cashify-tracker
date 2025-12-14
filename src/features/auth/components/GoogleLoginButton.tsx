@@ -1,9 +1,9 @@
 import { GoogleLogin } from '@react-oauth/google';
-import { useNavigate } from '@tanstack/react-router';
+import { useAuth } from './AuthProvider';
 import { authService } from '../services/authService';
 
 export const GoogleLoginButton = () => {
-  const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleSuccess = async (credentialResponse: any) => {
     try {
@@ -14,16 +14,16 @@ export const GoogleLoginButton = () => {
       const response = await authService.authenticateWithGoogle(credential);
 
       // Your backend returns JWT, user info, and onboarding status
-      if (response.token) {
-        // Store JWT and user data
-        localStorage.setItem('cashify_token', response.token);
-        localStorage.setItem('cashify_user', JSON.stringify(response.user));
+      if (response.token && response.user) {
+        // Store user data using AuthProvider
+        login(response.user, response.token, response.refreshToken);
 
         // Redirect based on onboarding status
+        // Use window.location for immediate redirect
         if (response.user.hasCompletedOnboarding) {
-          navigate({ to: '/dashboard' });
+          globalThis.location.href = '/dashboard';
         } else {
-          navigate({ to: '/onboarding' });
+          globalThis.location.href = '/onboarding';
         }
       }
     } catch (error) {

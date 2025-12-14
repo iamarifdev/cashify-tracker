@@ -122,13 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         }
 
         setLoading(false);
-
-        // Use requestAnimationFrame to ensure state updates are processed before redirect
-        requestAnimationFrame(() => {
-          // Use window.location for redirect since useNavigate is not available here
-          // Redirect directly to dashboard instead of root to avoid redirect chain
-          globalThis.location.replace("/dashboard");
-        });
+        // Redirect is now handled by the caller (GoogleLoginButton) based on onboarding status
       } catch (error) {
         console.error("Login failed:", error);
         setError(error instanceof Error ? error.message : "Authentication failed. Please try again.");
@@ -139,14 +133,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     []
   );
 
-  // Login method for development/testing
+  // Login method - stores user data but does NOT redirect
   const login = useCallback(
     (userData: User, idToken?: string, refreshToken?: string) => {
       loginWithIdToken(userData as GoogleUser, idToken, refreshToken);
-      // Redirect to dashboard after login using window.location
-      setTimeout(() => {
-        globalThis.location.replace("/dashboard");
-      }, 100);
+      // Redirect is now handled by the caller based on onboarding status
     },
     [loginWithIdToken]
   );
