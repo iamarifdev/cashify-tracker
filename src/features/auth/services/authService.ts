@@ -114,63 +114,7 @@ export const authService = {
     }
   },
 
-  /**
-   * Get the Google OAuth URL
-   */
-  async getGoogleOAuthUrl(): Promise<{ authUrl: string }> {
-    try {
-      // This would ideally come from the backend, but we can construct it here
-      const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-      const redirectUri = `${window.location.origin}/auth/callback`;
-      const scopes = ['openid', 'email', 'profile'];
-
-      const params = new URLSearchParams({
-        client_id: clientId,
-        redirect_uri: redirectUri,
-        response_type: 'code',
-        scope: scopes.join(' '),
-        access_type: 'offline',
-        prompt: 'consent'
-      });
-
-      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
-
-      return { authUrl };
-    } catch (error) {
-      console.error('Failed to generate Google OAuth URL:', error);
-      throw error;
-    }
-  },
-
-  /**
-   * Handle OAuth callback (exchange code for tokens)
-   */
-  async handleOAuthCallback(code: string, state: string): Promise<{ user: User; token: string; refreshToken?: string }> {
-    try {
-      const response = await apiClient.post<GoogleSignInResponse>('/auth/google/callback', {
-        code,
-        state
-      });
-
-      // Transform API response to our User type
-      const user: User = {
-        id: response.user.id,
-        name: response.user.name,
-        email: response.user.email,
-        photoUrl: response.user.photoUrl || undefined,
-        hasCompletedOnboarding: response.user.hasCompletedOnboarding
-      };
-
-      return {
-        user,
-        token: response.token,
-        refreshToken: response.refreshToken
-      };
-    } catch (error) {
-      console.error('OAuth callback failed:', error);
-      throw error;
-    }
-  },
+  // OAuth URL generation and callback handling are now handled by @react-oauth/google package
 
   /**
    * Logout user

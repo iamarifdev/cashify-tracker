@@ -1,69 +1,9 @@
 import React from 'react';
 import { useAuth } from '@/features/auth';
-
+import { GoogleLoginButton } from './GoogleLoginButton';
 
 export const Login: React.FC = () => {
-  const {
-    loading,
-    error,
-    isAuthenticated,
-    buildGoogleAuthUrl,
-    handleOAuthCallback,
-    generateNonce,
-    clearError
-  } = useAuth();
-
-  const [authError, setAuthError] = React.useState<string | undefined>();
-
-  // Handle OAuth callback on component mount
-  React.useEffect(() => {
-    // Check for authorization code in query params (authorization code flow)
-    const urlParams = new URLSearchParams(globalThis.location.search);
-    const code = urlParams.get('code');
-    const state = urlParams.get('state');
-    const errorParam = urlParams.get('error');
-    const errorDescription = urlParams.get('error_description');
-
-    // Also check hash for backward compatibility
-    const hash = globalThis.location.hash.startsWith('#')
-      ? globalThis.location.hash.substring(1)
-      : '';
-    const hashParams = new URLSearchParams(hash);
-    const hashCode = hashParams.get('code');
-    const hashState = hashParams.get('state');
-
-    // Use whichever has the code
-    const authCode = code || hashCode;
-    const authState = state || hashState;
-
-    if (authCode) {
-      // Clear the URL parameters
-      globalThis.history.replaceState({}, document.title, globalThis.location.pathname);
-
-      // Exchange authorization code for tokens via backend
-      handleOAuthCallback(authCode, authState || '')
-        .catch(error => {
-          console.error('Token exchange failed:', error);
-          setAuthError('Authentication failed. Please try again.');
-        });
-    } else if (errorParam) {
-      setAuthError(errorDescription ?? errorParam);
-      globalThis.history.replaceState({}, document.title, globalThis.location.pathname);
-    }
-  }, []);
-
-  const handleGoogleSignIn = () => {
-    clearError();
-    setAuthError(undefined);
-    
-    const nonce = generateNonce();
-    sessionStorage.setItem('google_nonce', nonce);
-    
-    const authUrl = buildGoogleAuthUrl(nonce);
-    
-    // Use redirect-based authentication (matching Angular)
-    globalThis.location.href = authUrl;
-  };
+  const { error } = useAuth();
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-white font-sans">
@@ -164,23 +104,9 @@ export const Login: React.FC = () => {
              <p className="text-gray-900 font-medium mb-6">Choose one option to continue</p>
              
              <div className="space-y-4">
-               <button 
-                 onClick={handleGoogleSignIn}
-                 disabled={loading}
-                 className="w-full flex items-center justify-center px-4 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-700 font-medium hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-blue-100"
-               >
-                 {loading ? (
-                    <div className="w-5 h-5 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin mr-3"></div>
-                 ) : (
-                    <svg viewBox="0 0 533.5 544.3" className="h-5 w-5 mr-3" aria-hidden="true">
-                      <path fill="#4285f4" d="M533.5 278.4c0-17.4-1.5-34.1-4.3-50.2H272v95h146.9c-6.3 34-25.3 62.8-54 82v68h87.2c51-46.9 81.4-116.1 81.4-194.8z" />
-                      <path fill="#34a853" d="M272 544.3c73.4 0 135-24.2 180-65.7l-87.2-68c-24.2 16.2-55.2 25.8-92.8 25.8-71 0-131.2-47.9-152.8-112.5h-90v70.6c45.7 90.6 140 149.8 242.8 149.8z" />
-                      <path fill="#fbbc04" d="M119.2 323.9c-10.4-30-10.4-62.4 0-92.4v-70.6h-90c-36.7 71.3-36.7 155.7 0 227z" />
-                      <path fill="#ea4335" d="M272 106.1c38.8-.6 75.9 13.8 104.3 40.5l78-78C409.7 24.7 342.7-.6 272 0 169.2 0 74.9 59.2 29.2 149.9l90 70.6C140.8 154 201 106.1 272 106.1z" />
-                    </svg>
-                 )}
-                 Continue With Google
-               </button>
+               <div className="w-full">
+                 <GoogleLoginButton />
+               </div>
 
                <button 
                  className="w-full flex items-center justify-center px-4 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-700 font-medium hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-blue-100"
@@ -210,9 +136,9 @@ export const Login: React.FC = () => {
               </button>
            </div>
 
-           {(error || authError) && (
+           {error && (
               <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-600 text-sm">{error || authError}</p>
+                <p className="text-red-600 text-sm">{error}</p>
               </div>
            )}
         </div>

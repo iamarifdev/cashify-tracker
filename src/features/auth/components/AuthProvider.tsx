@@ -23,18 +23,13 @@ interface AuthContextType {
   initializing: boolean;
   error: string | null;
   isAuthenticated: boolean;
-  refreshToken: () => Promise<boolean>;
   clearError: () => void;
-  buildGoogleAuthUrl: (nonce: string) => string;
-  handleOAuthCallback: (code: string, state: string) => Promise<void>;
-  generateNonce: () => string;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Environment variables from .env
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-const FRONTEND_URL = import.meta.env.VITE_FRONTEND_URL || globalThis.location.origin;
+// OAuth is now handled by @react-oauth/google package
+// Environment variables are handled by the Google OAuth component
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                                                                         children,
@@ -45,8 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [error, setError] = useState<string | null>(null);
   const [idToken, setIdToken] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState<string | null>(null);
-  const [tokenExpiresAt, setTokenExpiresAt] = useState<number | null>(null);
-
+  
   // Initialize from secure storage
   useEffect(() => {
     try {
@@ -83,12 +77,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, [user, idToken, refreshToken]);
 
-  // Check if token is expired
-  const isTokenExpired = useCallback(() => {
-    if (!tokenExpiresAt) return false;
-    return Date.now() >= tokenExpiresAt;
-  }, [tokenExpiresAt]);
-
+  
   // Login with Google ID token (for OAuth callback)
   const loginWithIdToken = useCallback(
     async (
@@ -168,8 +157,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setUser(null);
     setIdToken(null);
     setRefreshToken(null);
-    setTokenExpiresAt(null);
-    setError(null);
+        setError(null);
     setLoading(false);
 
     // Clear all auth-related storage using secure storage
@@ -193,176 +181,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     globalThis.location.href = '/login';
   }, []);
 
-  // Refresh Google access token
-  const refreshGoogleToken = useCallback(async (): Promise<boolean> => {
-    const storedRefreshToken = storage.getItem("REFRESH_TOKEN", "");
-    if (!storedRefreshToken || !GOOGLE_CLIENT_ID) {
-      throw new Error("No refresh token or Google Client ID available");
-    }
-
-    try {
-      const response = await fetch("https://oauth2.googleapis.com/token", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({
-          client_id: GOOGLE_CLIENT_ID,
-          refresh_token: storedRefreshToken,
-          grant_type: "refresh_token",
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Token refresh failed");
-      }
-
-      const data = await response.json();
-
-      if (data.access_token) {
-        const newExpiresAt = Date.now() + data.expires_in * 1000;
-        setTokenExpiresAt(newExpiresAt);
-        return true;
-      }
-
-      return false;
-    } catch (error) {
-      console.error("Token refresh failed:", error);
-      setError("Session expired. Please login again.");
-      logout();
-      return false;
-    }
-  }, [refreshToken, GOOGLE_CLIENT_ID, logout]);
-
-  // Auto-refresh token when needed
-  useEffect(() => {
-    const checkAndRefresh = async () => {
-      const storedRefreshToken = storage.getItem("REFRESH_TOKEN", "");
-      if (isTokenExpired() && storedRefreshToken) {
-        await refreshGoogleToken();
-      }
-    };
-
-    // Check every 5 minutes
-    const interval = setInterval(checkAndRefresh, 5 * 60 * 1000);
-
-    return () => clearInterval(interval);
-  }, [isTokenExpired, refreshGoogleToken]);
-
-  // Generate secure nonce for OAuth state
-  const generateNonce = useCallback((): string => {
-    const array = new Uint8Array(16);
-    if (globalThis.crypto?.getRandomValues) {
-      globalThis.crypto.getRandomValues(array);
-    } else {
-      // Fallback for older browsers
-      for (let i = 0; i < array.length; i++) {
-        array[i] = Math.floor(Math.random() * 256);
-      }
-    }
-    return Array.from(array, (b) => (`00${  b.toString(16)}`).slice(-2)).join("");
-  }, []);
-
-  // Build Google OAuth URL (matching Angular implementation)
-  const buildGoogleAuthUrl = useCallback(
-    (nonce: string): string => {
-      if (!GOOGLE_CLIENT_ID) {
-        throw new Error("Google Client ID configuration missing");
-      }
-
-      const params = new URLSearchParams({
-        client_id: GOOGLE_CLIENT_ID,
-        redirect_uri: `${FRONTEND_URL}/login`,
-        response_type: "code", // Use authorization code flow
-        scope: "openid email profile",
-        access_type: "offline",
-        prompt: "consent",
-        state: nonce
-      });
-
-      return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
-    },
-    [GOOGLE_CLIENT_ID, FRONTEND_URL]
-  );
-
-  // Handle OAuth callback
-  const handleOAuthCallback = useCallback(
-    async (code: string, state: string) => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        // Exchange authorization code for tokens
-        const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: new URLSearchParams({
-            client_id: GOOGLE_CLIENT_ID!,
-            client_secret: "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", // From .env file
-            code,
-            grant_type: "authorization_code",
-            redirect_uri: `${FRONTEND_URL}/login`,
-          }),
-        });
-
-        if (!tokenResponse.ok) {
-          throw new Error("Failed to exchange authorization code");
-        }
-
-        const tokenData = await tokenResponse.json();
-
-        // Get user info with access token
-        const userInfoResponse = await fetch(
-          `https://www.googleapis.com/oauth2/v2/userinfo?access_token=${tokenData.access_token}`
-        );
-
-        if (!userInfoResponse.ok) {
-          throw new Error("Failed to get user info");
-        }
-
-        const userData = await userInfoResponse.json();
-
-        // Create user object
-        const googleUser: GoogleUser = {
-          id: userData.id,
-          name: userData.name,
-          email: userData.email,
-          photoUrl: userData.picture,
-          emailVerified: userData.verified_email,
-          hasCompletedOnboarding: true, // Default to true for now
-          idToken: tokenData.id_token,
-          refreshToken: tokenData.refresh_token,
-          tokenExpiresAt: Date.now() + tokenData.expires_in * 1000,
-        };
-
-        // Store tokens
-        storage.setAuthToken(tokenData.id_token);
-        storage.setItem("USER", googleUser);
-        storage.setItem("GOOGLE_ID_TOKEN", tokenData.id_token);
-        if (tokenData.refresh_token) {
-          storage.setItem("REFRESH_TOKEN", tokenData.refresh_token);
-        }
-
-        // Update state
-        setUser(googleUser);
-        setIdToken(tokenData.id_token);
-        setRefreshToken(tokenData.refresh_token);
-        setLoading(false);
-
-        // Redirect to dashboard
-        requestAnimationFrame(() => {
-          globalThis.location.replace("/dashboard");
-        });
-      } catch (error) {
-        console.error("OAuth callback failed:", error);
-        setError("Authentication failed. Please try again.");
-        setLoading(false);
-      }
-    },
-    [GOOGLE_CLIENT_ID, FRONTEND_URL]
-  );
+  // OAuth flow is now handled by @react-oauth/google package
+  // All manual OAuth methods removed for security and simplicity
 
   const value: AuthContextType = useMemo(() => ({
     user,
@@ -372,12 +192,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     initializing,
     error,
     isAuthenticated: !!user,
-    refreshToken: refreshGoogleToken,
     clearError: () => setError(null),
-    buildGoogleAuthUrl,
-    handleOAuthCallback,
-    generateNonce,
-  }), [user, login, logout, loading, initializing, error, refreshGoogleToken, buildGoogleAuthUrl, handleOAuthCallback, generateNonce]);
+  }), [user, login, logout, loading, initializing, error]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
