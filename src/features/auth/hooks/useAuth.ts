@@ -1,10 +1,3 @@
-import {useContext} from 'react';
-import {AuthContext} from "@/features/auth/components/AuthProvider";
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+// Re-export useAuth from AuthProvider to maintain a single source of truth
+// This file exists for backwards compatibility and easier imports
+export { useAuth } from '../components/AuthProvider';

@@ -1,5 +1,5 @@
 
-import { Book, Business, Transaction, TransactionType, Contact } from '../types';
+import { Book, BusinessSummary, Contact, Transaction, TransactionType } from '../types';
 
 export const MOCK_USER = {
   id: 'u1',
@@ -8,7 +8,7 @@ export const MOCK_USER = {
   photoUrl: 'https://picsum.photos/100/100'
 };
 
-export const MOCK_BUSINESSES: Business[] = [
+export const MOCK_BUSINESSES: BusinessSummary[] = [
   { id: 'b1', name: "Ariful Islam's Business", role: 'Owner' },
   { id: 'b2', name: "Brothers Communications", role: 'Viewer' },
   { id: 'b3', name: "Test", role: 'Editor' }

@@ -1,19 +1,19 @@
+import { BusinessSummary } from '@/types';
 import {
-  useReactTable,
+  ColumnDef,
+  flexRender,
   getCoreRowModel,
   getSortedRowModel,
-  flexRender,
-  ColumnDef,
   SortingState,
+  useReactTable,
 } from '@tanstack/react-table';
-import { useState, useMemo } from 'react';
-import { Business } from '@/types';
+import { useMemo, useState } from 'react';
 import { useBusinessStats } from '../api/business.query';
 
 interface BusinessTableProps {
-  businesses: Business[];
-  onSelect?: (business: Business) => void;
-  onEdit?: (business: Business) => void;
+  businesses: BusinessSummary[];
+  onSelect?: (business: BusinessSummary) => void;
+  onEdit?: (business: BusinessSummary) => void;
   onDelete?: (businessId: string) => void;
 }
 
@@ -22,7 +22,7 @@ export function BusinessTable({ businesses, onSelect, onEdit, onDelete }: Busine
     { id: 'name', desc: false }
   ]);
 
-  const columns = useMemo<ColumnDef<Business>[]>(
+  const columns = useMemo<ColumnDef<BusinessSummary>[]>(
     () => [
       {
         accessorKey: 'name',

@@ -1,9 +1,11 @@
 import { GoogleLogin } from '@react-oauth/google';
-import { useAuth } from './AuthProvider';
+import { useRouter } from '@tanstack/react-router';
 import { authService } from '../services/authService';
+import { useAuth } from './AuthProvider';
 
 export const GoogleLoginButton = () => {
   const { login } = useAuth();
+  const router = useRouter();
 
   const handleSuccess = async (credentialResponse: any) => {
     try {
@@ -13,18 +15,28 @@ export const GoogleLoginButton = () => {
       // Send ID token to your backend
       const response = await authService.authenticateWithGoogle(credential);
 
+      // DEBUG: Log backend response
+      console.log('=== GOOGLE LOGIN BUTTON DEBUG ===');
+      console.log('Backend response:', response);
+      console.log('Backend token:', response.token);
+      console.log('Backend token type:', typeof response.token);
+      console.log('Backend token length:', response.token?.length);
+      console.log('=====================================');
+
       // Your backend returns JWT, user info, and onboarding status
       if (response.token && response.user) {
         // Store user data using AuthProvider
-        login(response.user, response.token, response.refreshToken);
+        // Pass Google's credential as idToken, backend's refreshToken, and backend JWT token
+        await login(response.user, credential, response.refreshToken, response.token);
 
-        // Redirect based on onboarding status
-        // Use window.location for immediate redirect
+        // Redirect based on onboarding status using TanStack Router
         if (response.user.hasCompletedOnboarding) {
-          globalThis.location.href = '/dashboard';
+          router.navigate({ to: '/dashboard' });
         } else {
-          globalThis.location.href = '/onboarding';
+          router.navigate({ to: '/onboarding' });
         }
+      } else {
+        console.error('No token or user in response!');
       }
     } catch (error) {
       console.error('Authentication failed:', error);

@@ -7,7 +7,6 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import { authService } from "../services/authService";
 import { storage } from "@/shared/utils/storage";
 
 // Enhanced User type with Google OAuth properties
@@ -17,8 +16,9 @@ interface EnhancedGoogleUser extends GoogleUser {
 
 interface AuthContextType {
   user: EnhancedGoogleUser | null;
-  login: (user: GoogleUser, idToken?: string, refreshToken?: string) => void;
+  login: (user: GoogleUser, idToken?: string, refreshToken?: string, backendToken?: string) => Promise<void>;
   logout: () => void;
+  completeOnboarding: () => void;
   loading: boolean;
   initializing: boolean;
   error: string | null;
@@ -68,78 +68,66 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, []);
 
-  // Store in secure storage when state changes
-  useEffect(() => {
-    if (user) {
-      storage.setItem("USER", user);
-      storage.setItem("GOOGLE_ID_TOKEN", idToken || "");
-      storage.setItem("REFRESH_TOKEN", refreshToken || "");
-    }
-  }, [user, idToken, refreshToken]);
 
-  
-  // Login with Google ID token (for OAuth callback)
-  const loginWithIdToken = useCallback(
-    async (
-      userData: GoogleUser,
-      googleIdToken?: string,
-      googleRefreshToken?: string
-    ) => {
+  // Login method - stores user data and tokens directly
+  // Does NOT call backend API (caller should have already authenticated)
+  const login = useCallback(
+    async (userData: User, idToken?: string, refreshToken?: string, backendToken?: string) => {
       setLoading(true);
       setError(null);
 
+      // DEBUG: Log login parameters
+      console.log('=== AUTH PROVIDER LOGIN DEBUG ===');
+      console.log('login() called with backendToken:', backendToken);
+      console.log('backendToken type:', typeof backendToken);
+      console.log('backendToken is truthy:', !!backendToken);
+      console.log('==================================');
+
       try {
-        if (!googleIdToken) {
-          throw new Error("Google ID token is required");
-        }
-
-        // Call authentication service to get real token
-        const authResult = await authService.authenticateWithGoogle(googleIdToken);
-
         // Create full user object with OAuth data
         const fullUser: EnhancedGoogleUser = {
-          ...userData,
-          idToken: googleIdToken,
-          refreshToken: authResult.refreshToken,
-          tokenExpiresAt: authResult.refreshToken
+          ...(userData as GoogleUser),
+          idToken,
+          refreshToken,
+          tokenExpiresAt: refreshToken
             ? Date.now() + 3600 * 1000
-            : undefined, // 1 hour for refresh token
+            : undefined,
           emailVerified: true,
-          hasCompletedOnboarding: authResult.user.hasCompletedOnboarding,
         };
 
-        // Update all state first
-        setUser(fullUser);
-        if (googleIdToken) setIdToken(googleIdToken);
-        if (authResult.refreshToken) setRefreshToken(authResult.refreshToken);
-
-        // Store authentication data using secure storage
-        storage.setAuthToken(authResult.token);
-        storage.setItem("USER", authResult.user);
-        storage.setItem("GOOGLE_ID_TOKEN", googleIdToken);
-        if (authResult.refreshToken) {
-          storage.setItem("REFRESH_TOKEN", authResult.refreshToken);
+        // IMPORTANT: Store to localStorage FIRST, before updating state
+        // This ensures the token is available immediately for API calls
+        if (backendToken) {
+          console.log('Calling storage.setAuthToken with:', backendToken);
+          storage.setAuthToken(backendToken);
+        } else {
+          console.error('backendToken is falsy! Not storing auth token.');
+        }
+        storage.setItem("USER", fullUser);
+        storage.setItem("GOOGLE_ID_TOKEN", idToken || "");
+        if (refreshToken) {
+          storage.setItem("REFRESH_TOKEN", refreshToken);
         }
 
+        // Verify token was stored
+        const storedToken = localStorage.getItem('cashify_token');
+        console.log('Token stored in localStorage:', storedToken);
+        console.log('Token exists in storage:', !!storedToken);
+
+        // Update state AFTER storage is written
+        setUser(fullUser);
+        if (idToken) setIdToken(idToken);
+        if (refreshToken) setRefreshToken(refreshToken);
+
         setLoading(false);
-        // Redirect is now handled by the caller (GoogleLoginButton) based on onboarding status
       } catch (error) {
         console.error("Login failed:", error);
         setError(error instanceof Error ? error.message : "Authentication failed. Please try again.");
         setLoading(false);
-        throw error; // Re-throw to allow caller to handle
+        throw error;
       }
     },
     []
-  );
-
-  // Login method - stores user data but does NOT redirect
-  const login = useCallback(
-    (userData: User, idToken?: string, refreshToken?: string) => {
-      loginWithIdToken(userData as GoogleUser, idToken, refreshToken);
-      // Redirect is now handled by the caller based on onboarding status
-    },
-    [loginWithIdToken]
   );
 
 
@@ -172,6 +160,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     globalThis.location.href = '/login';
   }, []);
 
+  // Mark onboarding as completed
+  const completeOnboarding = useCallback(() => {
+    if (!user) return;
+
+    const updatedUser: EnhancedGoogleUser = {
+      ...user,
+      hasCompletedOnboarding: true,
+    };
+
+    setUser(updatedUser);
+    storage.setOnboardingCompleted();
+  }, [user]);
+
   // OAuth flow is now handled by @react-oauth/google package
   // All manual OAuth methods removed for security and simplicity
 
@@ -179,12 +180,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     user,
     login,
     logout,
+    completeOnboarding,
     loading,
     initializing,
     error,
     isAuthenticated: !!user,
     clearError: () => setError(null),
-  }), [user, login, logout, loading, initializing, error]);
+  }), [user, login, logout, completeOnboarding, loading, initializing, error]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

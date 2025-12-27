@@ -1,5 +1,5 @@
 import { apiClient } from '@/shared/api/fetch-client';
-import type { Business } from '@/types';
+import type { BusinessSummary } from '@/types';
 import type { CreateBusinessData } from '../types/business.types';
 
 // Type definitions for API responses
@@ -35,7 +35,7 @@ interface BusinessStatsResponse {
 }
 
 // Transform API response to our Business type
-const transformBusinessResponse = (response: BusinessResponse): Business => {
+const transformBusinessResponse = (response: BusinessResponse): BusinessSummary => {
   const userRole = response.members.find(m => m.email === response.members[0]?.email)?.role || 'Viewer';
   return {
     id: response.id,
@@ -48,10 +48,10 @@ export const businessService = {
   /**
    * Get all businesses where the current user is a member
    */
-  async getAllBusinesses(): Promise<Business[]> {
+  async getAllBusinesses(): Promise<BusinessSummary[]> {
     try {
-      const response = await apiClient.get<BusinessResponse[]>('/businesses');
-      return response.map(transformBusinessResponse);
+      const response = await apiClient.get<BusinessSummary[]>('/businesses');
+      return response;
     } catch (error) {
       console.error('Failed to fetch businesses:', error);
       throw error;
@@ -61,7 +61,7 @@ export const businessService = {
   /**
    * Get a specific business by ID
    */
-  async getBusinessById(id: string): Promise<Business> {
+  async getBusinessById(id: string): Promise<BusinessSummary> {
     try {
       const response = await apiClient.get<BusinessResponse>(`/businesses/${id}`);
       return transformBusinessResponse(response);
@@ -74,7 +74,7 @@ export const businessService = {
   /**
    * Create a new business
    */
-  async createBusiness(data: CreateBusinessData): Promise<Business> {
+  async createBusiness(data: CreateBusinessData): Promise<BusinessSummary> {
     try {
       const requestData: CreateBusinessRequest = {
         name: data.name,
@@ -83,8 +83,13 @@ export const businessService = {
         type: data.type
       };
 
-      const response = await apiClient.post<BusinessResponse>('/businesses', requestData);
-      return transformBusinessResponse(response);
+      // Create business - returns { id, name }
+      const createResponse = await apiClient.post<{ id: string; name: string }>('/businesses', requestData);
+
+      // Fetch full business details including members
+      const fullResponse = await apiClient.get<BusinessResponse>(`/businesses/${createResponse.id}`);
+
+      return transformBusinessResponse(fullResponse);
     } catch (error) {
       console.error('Failed to create business:', error);
       throw error;
@@ -94,7 +99,7 @@ export const businessService = {
   /**
    * Update a business (limited to name for now)
    */
-  async updateBusiness(businessId: string, updates: Partial<Business>): Promise<Business> {
+  async updateBusiness(businessId: string, updates: Partial<BusinessSummary>): Promise<BusinessSummary> {
     try {
       const requestData = {
         name: updates.name

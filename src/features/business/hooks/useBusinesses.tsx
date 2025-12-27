@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react'
+import { BusinessSummary } from '@/types'
+import { useEffect, useState } from 'react'
 import { useBusinesses as useBusinessesQuery, useCreateBusiness } from '../api/business.query'
-import { Business } from '@/types'
 
 // Wrapper hook that adds local state management to the TanStack Query hooks
 export const useBusinesses = () => {
-  const [currentBusiness, setCurrentBusiness] = useState<Business | null>(null)
+  const [currentBusiness, setCurrentBusiness] = useState<BusinessSummary | null>(null)
 
   // Use TanStack Query for data fetching
   const {

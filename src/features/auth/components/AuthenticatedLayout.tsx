@@ -1,8 +1,9 @@
-import { ReactNode, useState } from 'react'
-import { Sidebar } from '@/shared/components/layout/Sidebar/Sidebar'
+import React, { ReactNode, useState } from 'react'
+import { useBusinesses } from '@/features/business/hooks/useBusinesses'
 import { TopBar } from '@/shared/components/layout/Header/TopBar'
+import { Sidebar } from '@/shared/components/layout/Sidebar/Sidebar'
+import { BusinessSummary } from '@/types'
 import { useAuth } from '../hooks/useAuth'
-import { Business } from '@/types'
 
 interface AuthenticatedLayoutProps {
   children: ReactNode
@@ -10,24 +11,22 @@ interface AuthenticatedLayoutProps {
 
 export const AuthenticatedLayout = ({ children }: AuthenticatedLayoutProps) => {
   const { user, logout } = useAuth()
+  const {
+    businesses,
+    currentBusiness,
+    setCurrentBusiness,
+    createBusiness,
+    isLoading: businessesLoading
+  } = useBusinesses()
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('bookkeeping')
 
-  // Mock data for now - will be replaced with actual data from API
-  const mockBusiness: Business = {
-    id: '1',
-    name: 'My Business',
-    role: 'Owner'
-  }
-
-  const handleBusinessChange = (business: Business) => {
-    // TODO: Implement business change logic
-    console.log('Business changed to:', business)
+  const handleBusinessChange = (business: BusinessSummary) => {
+    setCurrentBusiness(business)
   }
 
   const handleCreateBusiness = async (data: { name: string; category: string; type: string }) => {
-    // TODO: Implement business creation logic
-    console.log('Creating business:', data)
+    await createBusiness(data)
   }
 
   const handleLogout = () => {
@@ -72,17 +71,26 @@ export const AuthenticatedLayout = ({ children }: AuthenticatedLayoutProps) => {
 
       {/* Main content area */}
       <div className="flex-1 flex flex-col min-w-0">
-        <TopBar
-          user={user}
-          currentBusiness={mockBusiness}
-          businesses={[mockBusiness]}
-          onBusinessChange={handleBusinessChange}
-          onCreateBusiness={handleCreateBusiness}
-          onLogout={handleLogout}
-          onSidebarOpen={handleSidebarOpen}
-        />
+        {currentBusiness ? (
+          <TopBar
+            user={user}
+            currentBusiness={currentBusiness}
+            businesses={businesses}
+            onBusinessChange={handleBusinessChange}
+            onCreateBusiness={handleCreateBusiness}
+            onLogout={handleLogout}
+            onSidebarOpen={handleSidebarOpen}
+          />
+        ) : businessesLoading ? (
+          <div className="h-16 border-b border-gray-200 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+          </div>
+        ) : null}
         <main className="flex-1 p-4 lg:p-8">
-          {children}
+          {React.isValidElement(children) && currentBusiness
+            ? React.cloneElement(children as React.ReactElement<any>, { currentBusiness })
+            : children
+          }
         </main>
       </div>
     </div>

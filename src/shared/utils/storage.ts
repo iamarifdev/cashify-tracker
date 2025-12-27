@@ -1,4 +1,4 @@
-import { Business, GoogleUser } from '@/types'
+import { BusinessSummary, GoogleUser } from '@/types'
 
 interface StorageKeys {
   AUTH_TOKEN: 'cashify_token'
@@ -89,16 +89,34 @@ export class SecureStorage {
    */
   static getAuthToken(): string | null {
     const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN)
+    console.log('=== STORAGE GET AUTH TOKEN ===');
+    console.log('getAuthToken() called');
+    console.log('Retrieved token:', token);
+    console.log('Token type:', typeof token);
+    console.log('Token exists:', !!token);
+    console.log('==============================');
     return token
   }
 
   static setAuthToken(token: string): void {
+    console.log('=== STORAGE SET AUTH TOKEN ===');
+    console.log('setAuthToken() called with:', token);
+    console.log('Token type:', typeof token);
+    console.log('Token length:', token?.length);
+    console.log('Token is truthy:', !!token);
+
     if (!token || typeof token !== 'string') {
-      console.error('Invalid token provided')
+      console.error('Invalid token provided - returning early');
       return
     }
 
     localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token)
+    console.log('Token stored successfully with key:', STORAGE_KEYS.AUTH_TOKEN);
+
+    // Verify it was stored
+    const verify = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN)
+    console.log('Verification - retrieved token:', verify);
+    console.log('==============================');
   }
 
   /**
@@ -126,11 +144,11 @@ export class SecureStorage {
   /**
    * Business methods with type safety
    */
-  static getSelectedBusiness(): Business | null {
+  static getSelectedBusiness(): BusinessSummary | null {
     return this.getItem('SELECTED_BUSINESS', null)
   }
 
-  static setSelectedBusiness(business: Business): void {
+  static setSelectedBusiness(business: BusinessSummary): void {
     if (!business || typeof business !== 'object') {
       console.error('Invalid business object')
       return

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "@/features/auth";
 import { Button } from "@/shared/components/ui";
 import { defaultBusinessName, OnboardingPageProps } from "../types/onboarding.types";
-import { createFirstBusiness, markOnboardingComplete } from "../services/onboardingService";
+import { createFirstBusiness } from "../services/onboardingService";
 
 export const OnboardingPage: React.FC<OnboardingPageProps> = ({
   onComplete,
@@ -43,10 +43,7 @@ export const OnboardingPage: React.FC<OnboardingPageProps> = ({
       // Create the first business
       await createFirstBusiness(businessName.trim(), user.id);
 
-      // Mark onboarding as complete
-      markOnboardingComplete(user.id);
-
-      // Call onComplete callback
+      // Call onComplete callback - route handler will update onboarding status
       onComplete(businessName.trim());
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create business");

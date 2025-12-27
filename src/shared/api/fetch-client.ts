@@ -87,8 +87,12 @@ class ApiClient {
    * Add auth token to request headers
    */
   private addAuthHeader(options: ApiRequestOptions = {}): ApiRequestOptions {
-    // In development mode, use dev token if available
+    // DEBUG: Log token retrieval
+    console.log('=== API CLIENT ADD AUTH HEADER ===');
     let token = storage.getAuthToken()
+
+    console.log('Token from storage:', token);
+    console.log('Token is truthy:', !!token);
 
     if (!token && import.meta.env.VITE_DEV_JWT_TOKEN) {
       token = import.meta.env.VITE_DEV_JWT_TOKEN
@@ -99,12 +103,17 @@ class ApiClient {
 
     if (token) {
       headers.set('Authorization', `Bearer ${token}`)
+      console.log('Authorization header set:', `Bearer ${token.substring(0, 20)}...`);
+    } else {
+      console.error('No token available - Authorization header NOT set!');
     }
 
     // Set default content-type if not specified
     if (!headers.has('Content-Type') && options.body) {
       headers.set('Content-Type', 'application/json')
     }
+
+    console.log('=====================================');
 
     return {
       ...options,

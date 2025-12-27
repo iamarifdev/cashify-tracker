@@ -1,9 +1,9 @@
-import React from 'react';
-import { GoogleOAuthProvider } from '@react-oauth/google';
-import { RouterProvider } from '@tanstack/react-router';
-import { router } from './router';
 import { AuthProvider } from '@/features/auth';
 import { ErrorBoundary } from '@/shared/components/ErrorBoundary/ErrorBoundary';
+import { GoogleOAuthProvider } from '@react-oauth/google';
+import { RouterProvider } from '@tanstack/react-router';
+import React from 'react';
+import { router } from './router';
 
 const App: React.FC = () => {
   return (

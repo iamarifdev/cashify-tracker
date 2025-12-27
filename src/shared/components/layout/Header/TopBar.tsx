@@ -1,14 +1,14 @@
 
-import React, { useState, useRef, useEffect } from 'react';
-import { LayoutGrid, ChevronDown, Plus, LogOut, Download, Menu } from 'lucide-react';
-import { Business, User } from '@/types';
 import { CreateBusinessModal } from '@/features/business';
+import { BusinessSummary, User } from '@/types';
+import { ChevronDown, Download, LayoutGrid, LogOut, Menu, Plus } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface TopBarProps {
   user: User | null;
-  currentBusiness: Business;
-  businesses: Business[];
-  onBusinessChange: (business: Business) => void;
+  currentBusiness: BusinessSummary;
+  businesses: BusinessSummary[];
+  onBusinessChange: (business: BusinessSummary) => void;
   onCreateBusiness: (data: { name: string; category: string; type: string }) => void;
   onLogout: () => void;
   onSidebarOpen: () => void;

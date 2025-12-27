@@ -15,7 +15,7 @@ export interface GoogleUser extends User {
   hasCompletedOnboarding?: boolean;
 }
 
-export interface Business {
+export interface BusinessSummary {
   id: string;
   name: string;
   role: 'Owner' | 'Editor' | 'Viewer';

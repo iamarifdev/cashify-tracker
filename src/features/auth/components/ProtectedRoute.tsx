@@ -1,4 +1,4 @@
-import { useAuth } from '../hooks/useAuth'
+import { useAuth } from './AuthProvider'
 import { Navigate } from '@tanstack/react-router'
 import { ReactNode } from 'react'
 

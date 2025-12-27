@@ -1,15 +1,15 @@
-import { useState, useCallback } from 'react';
-import { Business } from '@/types';
-import { useLocalStorage } from '@/shared/hooks/useLocalStorage';
 import { MOCK_BUSINESSES } from '@/services/mockData';
+import { useLocalStorage } from '@/shared/hooks/useLocalStorage';
+import { BusinessSummary } from '@/types';
+import { useCallback, useState } from 'react';
 
 export const useBusiness = () => {
-  const [businesses, setBusinesses] = useLocalStorage<Business[]>('cashify_businesses', MOCK_BUSINESSES);
-  const [currentBusiness, setCurrentBusiness] = useLocalStorage<Business>('cashify_current_business', MOCK_BUSINESSES[0]);
+  const [businesses, setBusinesses] = useLocalStorage<BusinessSummary[]>('cashify_businesses', MOCK_BUSINESSES);
+  const [currentBusiness, setCurrentBusiness] = useLocalStorage<BusinessSummary>('cashify_current_business', MOCK_BUSINESSES[0]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const selectBusiness = useCallback((business: Business) => {
+  const selectBusiness = useCallback((business: BusinessSummary) => {
     setCurrentBusiness(business);
     setError(null);
   }, [setCurrentBusiness]);
@@ -22,7 +22,7 @@ export const useBusiness = () => {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      const newBusiness: Business = {
+      const newBusiness: BusinessSummary = {
         id: `biz_${Date.now()}`,
         name: businessData.name,
         role: 'Owner'
@@ -41,7 +41,7 @@ export const useBusiness = () => {
     }
   }, [businesses, setBusinesses, setCurrentBusiness]);
 
-  const updateBusiness = useCallback(async (businessId: string, updates: Partial<Business>) => {
+  const updateBusiness = useCallback(async (businessId: string, updates: Partial<BusinessSummary>) => {
     setIsLoading(true);
     setError(null);
 

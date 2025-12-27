@@ -1,7 +1,7 @@
-import { Business } from '@/types';
+import { BusinessSummary } from '@/types';
 
 // Re-export Business for use within the feature
-export type { Business };
+export type { BusinessSummary as Business };
 
 export interface CreateBusinessData {
   name: string;
@@ -10,8 +10,8 @@ export interface CreateBusinessData {
 }
 
 export interface BusinessState {
-  businesses: Business[];
-  currentBusiness: Business;
+  businesses: BusinessSummary[];
+  currentBusiness: BusinessSummary;
   isLoading: boolean;
   error: string | null;
 }

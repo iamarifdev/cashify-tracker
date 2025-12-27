@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
-import { Search, Book, Pencil, Copy, UserPlus, CornerUpRight } from 'lucide-react';
-import { Business } from '@/types';
-import type { Cashbook } from '../types/cashbook.types';
-import { RoleBanner, PromoSidebar } from '@/shared/components/layout';
-import { FilterDropdown } from '@/shared/components/ui';
-import { LoadingSpinner } from '@/shared/components/Loading/LoadingSpinner';
 import { ApiErrorDisplay } from '@/shared/components/Error/ApiError';
+import { PromoSidebar, RoleBanner } from '@/shared/components/layout';
+import { LoadingSpinner } from '@/shared/components/Loading/LoadingSpinner';
+import { FilterDropdown } from '@/shared/components/ui';
+import { BusinessSummary } from '@/types';
+import { Book, Copy, CornerUpRight, Pencil, Search, UserPlus } from 'lucide-react';
+import React, { useState } from 'react';
 import { useCashbooksManager } from '../api/cashbook.query';
+import type { Cashbook } from '../types/cashbook.types';
 
 interface DashboardProps {
   onBookSelect: (book: Cashbook) => void;
-  currentBusiness: Business;
+  currentBusiness?: BusinessSummary;
 }
 
 const SORT_OPTIONS = [
@@ -26,8 +26,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ onBookSelect, currentBusin
   const [sortOption, setSortOption] = useState('Last Updated');
   const [isSortOpen, setIsSortOpen] = useState(false);
 
-  // Fetch cashbooks from API
-  const { cashbooks, isLoading, error, refetch } = useCashbooksManager(currentBusiness.id);
+  // Fetch cashbooks from API - only when currentBusiness exists
+  const { cashbooks, isLoading, error, refetch } = useCashbooksManager(currentBusiness?.id ?? '');
+
+  // Handle loading state when no business is selected
+  if (!currentBusiness) {
+    return (
+      <div className="flex items-center justify-center h-full bg-[#f9fafb]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading business...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Filter & Sort logic
   const filteredBooks = cashbooks
