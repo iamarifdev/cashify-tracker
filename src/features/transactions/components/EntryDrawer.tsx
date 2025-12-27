@@ -11,7 +11,7 @@ interface EntryDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   type: TransactionType;
-  onSave: (data: any) => void;
+  onSave: (data: Transaction) => void;
   initialData?: Transaction | null;
 }
 
@@ -75,16 +75,23 @@ export const EntryDrawer: React.FC<EntryDrawerProps> = ({ isOpen, onClose, type,
   const displayTime = initialData ? initialData.time : new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
   const handleSave = () => {
-      onSave({ 
-          id: initialData?.id,
-          amount, 
-          remarks,
+      const numAmount = Number.parseFloat(amount);
+      if (Number.isNaN(numAmount)) return;
+
+      onSave({
+          id: initialData?.id || '',
+          bookId: initialData?.bookId || '',
+          amount: numAmount,
+          details: remarks,
           category: category || 'General',
           paymentMode: paymentMode || 'Cash',
-          contactName,
+          contactName: contactName || undefined,
           type: activeType,
-          date: initialData?.date,
-          time: initialData?.time 
+          date: initialData?.date || new Date().toISOString(),
+          time: initialData?.time || new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }),
+          attachments: initialData?.attachments || [],
+          balanceAfter: initialData?.balanceAfter || 0,
+          createdBy: initialData?.createdBy || ''
       });
   };
 

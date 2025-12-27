@@ -33,7 +33,6 @@ export function QueryStateWrapper<T>({
 }: QueryStateWrapperProps<T>) {
   const { data, isLoading, isError, error, refetch } = query;
 
-  // Loading state
   if (isLoading) {
     return (
       <>
@@ -46,7 +45,6 @@ export function QueryStateWrapper<T>({
     );
   }
 
-  // Error state
   if (isError) {
     return (
       <>
@@ -62,7 +60,6 @@ export function QueryStateWrapper<T>({
     );
   }
 
-  // Empty state
   if (!data) {
     return (
       <>
@@ -75,11 +72,8 @@ export function QueryStateWrapper<T>({
     );
   }
 
-  // Success state
   return <>{children(data)}</>;
 }
-
-// Hook to create consistent query state
 export function useQueryState<T>(
   query: {
     data: T | undefined;

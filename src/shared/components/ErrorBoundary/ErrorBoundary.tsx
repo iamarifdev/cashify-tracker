@@ -30,14 +30,8 @@ export class ErrorBoundary extends Component<Props, State> {
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Uncaught error:', error, errorInfo);
 
-    // Call the onError prop if provided
     if (this.props.onError) {
       this.props.onError(error, errorInfo);
-    }
-
-    // Log to external service in production
-    if (import.meta.env.PROD) {
-      // TODO: Integrate with error tracking service (Sentry, LogRocket, etc.)
     }
   }
 
@@ -121,15 +115,8 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 }
 
-// Hook for error boundaries in functional components
 export const useErrorHandler = () => {
   return React.useCallback((error: Error, errorInfo: ErrorInfo) => {
-    // Log error to monitoring service
     console.error('Error caught by error boundary:', error, errorInfo);
-
-    // In production, send to error tracking service
-    if (import.meta.env.PROD) {
-      // TODO: Integrate with error tracking service
-    }
   }, []);
 };

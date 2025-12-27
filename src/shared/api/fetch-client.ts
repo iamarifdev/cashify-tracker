@@ -8,7 +8,7 @@ interface ApiRequestOptions extends RequestInit {
 export class ApiError extends Error {
   status?: number
   code?: string
-  details?: any
+  details?: unknown
 
   constructor(message: string, status?: number) {
     super(message)
@@ -23,7 +23,7 @@ class ApiClient {
   private isRefreshing = false
   private failedQueue: Array<{
     resolve: (token: string) => void
-    reject: (error: any) => void
+    reject: (error: unknown) => void
   }> = []
 
   constructor() {
@@ -60,14 +60,12 @@ class ApiClient {
    * Handle unauthorized errors consistently
    */
   private handleUnauthorized(): void {
-    // Clear authentication data
     storage.clearAuth()
 
-    // Use TanStack Router's navigation if available, otherwise fallback
     if (typeof globalThis !== 'undefined') {
-      const isRouterAvailable = (globalThis as any).__TANSTACK_ROUTER__?.router
-      if (isRouterAvailable) {
-        (globalThis as any).__TANSTACK_ROUTER__.router.navigate({
+      const router = (globalThis as { __TANSTACK_ROUTER__?: { router: { navigate: (opts: { to: string; replace: boolean }) => void } } }).__TANSTACK_ROUTER__?.router
+      if (router) {
+        router.navigate({
           to: '/login',
           replace: true
         })
@@ -87,33 +85,21 @@ class ApiClient {
    * Add auth token to request headers
    */
   private addAuthHeader(options: ApiRequestOptions = {}): ApiRequestOptions {
-    // DEBUG: Log token retrieval
-    console.log('=== API CLIENT ADD AUTH HEADER ===');
     let token = storage.getAuthToken()
-
-    console.log('Token from storage:', token);
-    console.log('Token is truthy:', !!token);
 
     if (!token && import.meta.env.VITE_DEV_JWT_TOKEN) {
       token = import.meta.env.VITE_DEV_JWT_TOKEN
-      console.warn('Using development JWT token')
     }
 
     const headers = new Headers(options.headers)
 
     if (token) {
       headers.set('Authorization', `Bearer ${token}`)
-      console.log('Authorization header set:', `Bearer ${token.substring(0, 20)}...`);
-    } else {
-      console.error('No token available - Authorization header NOT set!');
     }
 
-    // Set default content-type if not specified
     if (!headers.has('Content-Type') && options.body) {
       headers.set('Content-Type', 'application/json')
     }
-
-    console.log('=====================================');
 
     return {
       ...options,
@@ -126,13 +112,11 @@ class ApiClient {
    */
   private async handleResponse<T>(response: Response, originalOptions: ApiRequestOptions): Promise<T> {
     if (response.ok) {
-      // Handle empty responses (e.g., 204 No Content)
       const contentLength = response.headers.get('content-length')
       if (contentLength === '0' || !response.body) {
         return undefined as T
       }
 
-      // Try to parse as JSON first, fallback to text
       try {
         return await response.json()
       } catch {
@@ -153,8 +137,6 @@ class ApiClient {
       try {
         const newToken = storage.getItem('REFRESH_TOKEN', null)
         if (newToken) {
-          // This would call your refresh endpoint
-          // For now, we'll just clear auth
           this.handleUnauthorized()
         }
       } catch (refreshError) {
@@ -164,7 +146,6 @@ class ApiClient {
         this.isRefreshing = false
       }
 
-      // Retry the original request with new token
       return new Promise((resolve, reject) => {
         this.failedQueue.push({ resolve, reject })
       }).then(async (token) => {
@@ -184,13 +165,11 @@ class ApiClient {
       })
     }
 
-    // Handle other errors
     let errorMessage = 'Request failed'
     try {
       const errorData = await response.json()
       errorMessage = errorData.message || errorData.title || errorMessage
     } catch {
-      // If JSON parsing fails, use status text
       errorMessage = response.statusText || errorMessage
     }
 

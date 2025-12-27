@@ -40,8 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [error, setError] = useState<string | null>(null);
   const [idToken, setIdToken] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState<string | null>(null);
-  
-  // Initialize from secure storage
+
   useEffect(() => {
     try {
       const storedUser = storage.getUser();
@@ -60,31 +59,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     } catch (error) {
       console.error("Failed to restore auth session:", error);
-      // Clear corrupted data
       storage.clearAuth();
     } finally {
-      // Always set initializing to false after checking
       setInitializing(false);
     }
   }, []);
 
 
-  // Login method - stores user data and tokens directly
-  // Does NOT call backend API (caller should have already authenticated)
   const login = useCallback(
     async (userData: User, idToken?: string, refreshToken?: string, backendToken?: string) => {
       setLoading(true);
       setError(null);
 
-      // DEBUG: Log login parameters
-      console.log('=== AUTH PROVIDER LOGIN DEBUG ===');
-      console.log('login() called with backendToken:', backendToken);
-      console.log('backendToken type:', typeof backendToken);
-      console.log('backendToken is truthy:', !!backendToken);
-      console.log('==================================');
-
       try {
-        // Create full user object with OAuth data
         const fullUser: EnhancedGoogleUser = {
           ...(userData as GoogleUser),
           idToken,
@@ -95,13 +82,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           emailVerified: true,
         };
 
-        // IMPORTANT: Store to localStorage FIRST, before updating state
-        // This ensures the token is available immediately for API calls
         if (backendToken) {
-          console.log('Calling storage.setAuthToken with:', backendToken);
           storage.setAuthToken(backendToken);
-        } else {
-          console.error('backendToken is falsy! Not storing auth token.');
         }
         storage.setItem("USER", fullUser);
         storage.setItem("GOOGLE_ID_TOKEN", idToken || "");
@@ -109,12 +91,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           storage.setItem("REFRESH_TOKEN", refreshToken);
         }
 
-        // Verify token was stored
-        const storedToken = localStorage.getItem('cashify_token');
-        console.log('Token stored in localStorage:', storedToken);
-        console.log('Token exists in storage:', !!storedToken);
-
-        // Update state AFTER storage is written
         setUser(fullUser);
         if (idToken) setIdToken(idToken);
         if (refreshToken) setRefreshToken(refreshToken);
@@ -131,36 +107,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 
 
-  // Logout and clear all authentication data
   const logout = useCallback(() => {
     setUser(null);
     setIdToken(null);
     setRefreshToken(null);
-        setError(null);
+    setError(null);
     setLoading(false);
 
-    // Clear all auth-related storage using secure storage
     storage.clearAuth();
     storage.removeItem("SELECTED_BUSINESS");
 
-    // Clear OAuth state
     localStorage.removeItem("cashify_google_nonce");
 
-    // Clear any in-memory Google state
     const token = storage.getAuthToken();
-    if (token && typeof globalThis !== 'undefined' && (globalThis as any).google?.accounts?.oauth2) {
+    const googleGlobal = typeof globalThis !== 'undefined' ? (globalThis as { google?: { accounts?: { oauth2?: { revoke: (token: string) => void } } } }).google : undefined;
+    if (token && googleGlobal?.accounts?.oauth2) {
       try {
-        (globalThis as any).google.accounts.oauth2.revoke(token);
-      } catch (e) {
-        // Ignore revoke errors
+        googleGlobal.accounts.oauth2.revoke(token);
+      } catch {
+        // Ignore errors during token revocation
       }
     }
 
-    // Redirect to login page after logout
     globalThis.location.href = '/login';
   }, []);
 
-  // Mark onboarding as completed
   const completeOnboarding = useCallback(() => {
     if (!user) return;
 
@@ -172,9 +143,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setUser(updatedUser);
     storage.setOnboardingCompleted();
   }, [user]);
-
-  // OAuth flow is now handled by @react-oauth/google package
-  // All manual OAuth methods removed for security and simplicity
 
   const value: AuthContextType = useMemo(() => ({
     user,

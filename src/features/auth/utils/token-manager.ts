@@ -11,7 +11,7 @@ export class TokenManager {
   /**
    * Decode JWT payload safely
    */
-  private static decodeJWTPayload(token: string): any {
+  private static decodeJWTPayload(token: string): { exp?: number } | null {
     try {
       const parts = token.split('.')
       if (parts.length !== 3) return null

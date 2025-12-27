@@ -70,16 +70,16 @@ export function ApiErrorDisplay({
           </h3>
           <div className="mt-1 text-sm text-gray-500">
             <p>{getErrorMessage()}</p>
-            {import.meta.env.DEV && apiError?.details && (
+            {import.meta.env.DEV && apiError?.details ? (
               <details className="mt-2">
                 <summary className="cursor-pointer text-xs text-gray-400 hover:text-gray-600">
                   Technical details
                 </summary>
                 <pre className="mt-1 p-2 bg-gray-100 rounded text-xs overflow-auto">
-                  {JSON.stringify(apiError.details, null, 2)}
+                  {String(JSON.stringify(apiError.details, null, 2))}
                 </pre>
               </details>
-            )}
+            ) : null}
           </div>
           {showRetry && onRetry && (
             <div className="mt-3 flex space-x-2">

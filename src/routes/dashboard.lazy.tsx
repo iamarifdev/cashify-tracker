@@ -6,7 +6,7 @@ import { Dashboard } from '../features/cashbook/components/Dashboard'
 function DashboardRoute() {
   const router = useRouter()
 
-  const handleBookSelect = (book: any) => {
+  const handleBookSelect = (book: { id: string }) => {
     router.navigate({ to: '/books/$bookId', params: { bookId: book.id } })
   }
 

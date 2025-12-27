@@ -88,7 +88,7 @@ export const AuthenticatedLayout = ({ children }: AuthenticatedLayoutProps) => {
         ) : null}
         <main className="flex-1 p-4 lg:p-8">
           {React.isValidElement(children) && currentBusiness
-            ? React.cloneElement(children as React.ReactElement<any>, { currentBusiness })
+            ? React.cloneElement(children as React.ReactElement<{ currentBusiness?: typeof currentBusiness }>, { currentBusiness })
             : children
           }
         </main>

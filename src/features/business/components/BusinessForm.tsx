@@ -4,7 +4,6 @@ import { z } from 'zod';
 import { useCreateBusiness } from '../api/business.query';
 import type { CreateBusinessData } from '../types/business.types';
 
-// Validation schema
 const businessSchema = z.object({
   name: z.string().min(1, 'Business name is required').max(100, 'Name too long'),
   category: z.string().min(1, 'Category is required'),

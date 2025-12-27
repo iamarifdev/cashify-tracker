@@ -18,15 +18,9 @@ const STORAGE_KEYS: StorageKeys = {
   PREFERENCES: 'cashify_preferences'
 }
 
-/**
- * Safe storage utilities with type guards and error handling
- */
 export class SecureStorage {
   private static readonly isClient = globalThis.window !== undefined
 
-  /**
-   * Safely parse JSON with error handling
-   */
   private static safeParseJSON<T>(value: string | null, defaultValue: T): T {
     if (!value) return defaultValue
 
@@ -39,9 +33,6 @@ export class SecureStorage {
     }
   }
 
-  /**
-   * Get item from localStorage with type safety
-   */
   static getItem<T>(key: keyof StorageKeys, defaultValue: T): T {
     if (!this.isClient) return defaultValue
 
@@ -49,9 +40,6 @@ export class SecureStorage {
     return this.safeParseJSON(value, defaultValue)
   }
 
-  /**
-   * Set item in localStorage with type safety
-   */
   static setItem<T>(key: keyof StorageKeys, value: T): void {
     if (!this.isClient) return
 
@@ -63,18 +51,12 @@ export class SecureStorage {
     }
   }
 
-  /**
-   * Remove item from localStorage
-   */
   static removeItem(key: keyof StorageKeys): void {
     if (!this.isClient) return
 
     localStorage.removeItem(key)
   }
 
-  /**
-   * Clear all authentication-related items
-   */
   static clearAuth(): void {
     if (!this.isClient) return
 
@@ -84,44 +66,15 @@ export class SecureStorage {
     this.removeItem('GOOGLE_ID_TOKEN')
   }
 
-  /**
-   * Authentication token methods
-   */
   static getAuthToken(): string | null {
-    const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN)
-    console.log('=== STORAGE GET AUTH TOKEN ===');
-    console.log('getAuthToken() called');
-    console.log('Retrieved token:', token);
-    console.log('Token type:', typeof token);
-    console.log('Token exists:', !!token);
-    console.log('==============================');
-    return token
+    return localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN)
   }
 
   static setAuthToken(token: string): void {
-    console.log('=== STORAGE SET AUTH TOKEN ===');
-    console.log('setAuthToken() called with:', token);
-    console.log('Token type:', typeof token);
-    console.log('Token length:', token?.length);
-    console.log('Token is truthy:', !!token);
-
-    if (!token || typeof token !== 'string') {
-      console.error('Invalid token provided - returning early');
-      return
-    }
-
+    if (!token || typeof token !== 'string') return
     localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token)
-    console.log('Token stored successfully with key:', STORAGE_KEYS.AUTH_TOKEN);
-
-    // Verify it was stored
-    const verify = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN)
-    console.log('Verification - retrieved token:', verify);
-    console.log('==============================');
   }
 
-  /**
-   * User methods with type safety
-   */
   static getUser(): GoogleUser | null {
     return this.getItem('USER', null)
   }
@@ -132,7 +85,6 @@ export class SecureStorage {
       return
     }
 
-    // Validate required fields
     if (!user.id || !user.email) {
       console.error('User object missing required fields')
       return
@@ -141,9 +93,6 @@ export class SecureStorage {
     this.setItem('USER', user)
   }
 
-  /**
-   * Business methods with type safety
-   */
   static getSelectedBusiness(): BusinessSummary | null {
     return this.getItem('SELECTED_BUSINESS', null)
   }
@@ -154,7 +103,6 @@ export class SecureStorage {
       return
     }
 
-    // Validate required fields
     if (!business.id || !business.name) {
       console.error('Business object missing required fields')
       return
@@ -163,22 +111,16 @@ export class SecureStorage {
     this.setItem('SELECTED_BUSINESS', business)
   }
 
-  /**
-   * Check if user is authenticated with token validation
-   */
   static isAuthenticated(): boolean {
     const token = this.getAuthToken()
     const user = this.getUser()
 
     if (!token || !user) return false
 
-    // Basic token validation (you can add more sophisticated validation)
     try {
-      // JWT tokens have 3 parts separated by dots
       const parts = token.split('.')
       if (parts.length !== 3) return false
 
-      // Check token expiration if it's a JWT
       const payload = JSON.parse(atob(parts[1]))
       const now = Date.now() / 1000
 
@@ -195,17 +137,11 @@ export class SecureStorage {
     }
   }
 
-  /**
-   * Check if user has completed onboarding
-   */
   static hasCompletedOnboarding(): boolean {
     const user = this.getUser()
     return user?.hasCompletedOnboarding ?? false
   }
 
-  /**
-   * Set onboarding completion
-   */
   static setOnboardingCompleted(): void {
     const user = this.getUser()
     if (user) {
@@ -214,8 +150,6 @@ export class SecureStorage {
   }
 }
 
-// Export singleton instance for convenience
 export const storage = SecureStorage
 
-// Export constants for external use
 export { STORAGE_KEYS }

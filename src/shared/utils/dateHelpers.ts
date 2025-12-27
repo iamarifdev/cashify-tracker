@@ -1,7 +1,3 @@
-/**
- * Date utility functions
- */
-
 export const formatDate = (date: string | Date): string => {
   const d = new Date(date);
   return d.toLocaleDateString('en-GB', {
@@ -25,7 +21,7 @@ export const formatDateTime = (date: string | Date): string => {
 
 export const formatTime = (time: string): string => {
   const [hours, minutes] = time.split(':');
-  const h = parseInt(hours);
+  const h = Number.parseInt(hours);
   const period = h >= 12 ? 'PM' : 'AM';
   const displayHours = h > 12 ? h - 12 : h === 0 ? 12 : h;
   return `${displayHours}:${minutes} ${period}`;
